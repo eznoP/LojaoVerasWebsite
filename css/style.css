@@ -2130,3 +2130,92 @@ svg {
     min-height: 235px;
   }
 }
+
+/* ========================================================================
+   LOJÃO VERAS — v1.6 · adaptação do catálogo interativo para mobile
+   ======================================================================== */
+.hint-mobile { display: none; }
+
+@media (max-width: 720px) {
+  .catalogo .section-head {
+    overflow: hidden;
+  }
+
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 9px;
+    padding: 0 0 8px;
+    margin-top: 28px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 11px 18px;
+    scroll-snap-align: start;
+    white-space: nowrap;
+    border-radius: 999px;
+  }
+
+  .circular-catalog-toolbar {
+    padding-bottom: 12px;
+  }
+
+  .catalog-status {
+    font-size: .68rem;
+    line-height: 1.55;
+  }
+
+  .hint-desktop { display: none; }
+  .hint-mobile { display: inline; }
+
+  .catalog-drag-hint {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(13, 35, 64, .055);
+    color: var(--brass);
+    font-size: .66rem;
+    letter-spacing: .09em;
+  }
+
+  .circular-catalog-stage {
+    height: min(118vw, 490px);
+    min-height: 430px;
+    margin-top: 10px;
+    border-radius: 18px;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .circular-catalog-host {
+    inset: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .circular-catalog-wrap {
+    padding-inline: 14px;
+  }
+
+  .circular-catalog-stage {
+    height: 450px;
+    min-height: 450px;
+    border-radius: 16px;
+  }
+
+  .catalog-status {
+    max-width: 34ch;
+  }
+}

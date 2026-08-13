@@ -161,7 +161,7 @@ class Title {
 }
 
 class Media {
-  constructor({ geometry, gl, image, index, length, renderer, scene, screen, text, viewport, bend, textColor, borderRadius = 0, font }) {
+  constructor({ geometry, gl, image, index, length, renderer, scene, screen, text, viewport, bend, textColor, borderRadius = 0, font, mobile = false }) {
     this.extra = 0;
     this.geometry = geometry;
     this.gl = gl;
@@ -177,6 +177,7 @@ class Media {
     this.textColor = textColor;
     this.borderRadius = borderRadius;
     this.font = font;
+    this.mobile = mobile;
     this.createShader();
     this.createMesh();
     this.onResize();
@@ -318,8 +319,14 @@ class Media {
     if (!this.screen || !this.viewport) return;
 
     this.scale = this.screen.height / 1500;
-    this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
-    this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+    if (this.mobile) {
+      // Cards um pouco maiores no celular: leitura melhor sem perder o próximo item de vista.
+      this.plane.scale.y = this.viewport.height * 0.66;
+      this.plane.scale.x = this.viewport.height * 0.50;
+    } else {
+      this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
+      this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+    }
     this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
     this.padding = 2;
     this.width = this.plane.scale.x + this.padding;
@@ -329,12 +336,17 @@ class Media {
 }
 
 class App {
-  constructor(container, { items, bend, textColor = '#0d2340', borderRadius = 0, font = '500 28px Jost', scrollSpeed = 2, scrollEase = 0.05 } = {}) {
+  constructor(container, { items, bend, textColor = '#0d2340', borderRadius = 0, font = '500 28px Jost', scrollSpeed = 2, scrollEase = 0.05, mobile = false } = {}) {
     autoBind(this);
     this.container = container;
     this.scrollSpeed = scrollSpeed;
-    this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0, position: 0 };
-    this.onCheckDebounce = debounce(this.onCheck, 160);
+    this.mobile = mobile;
+    this.pointerId = null;
+    this.gestureAxis = null;
+    this.dragThreshold = mobile ? 9 : 5;
+    this.dragSensitivity = mobile ? 0.042 : 0.025;
+    this.scroll = { ease: mobile ? Math.min(scrollEase + 0.018, 0.09) : scrollEase, current: 0, target: 0, last: 0, position: 0 };
+    this.onCheckDebounce = debounce(this.onCheck, mobile ? 110 : 160);
     this.createRenderer();
     this.createCamera();
     this.createScene();
@@ -384,32 +396,94 @@ class App {
       bend,
       textColor,
       borderRadius,
-      font
+      font,
+      mobile: this.mobile
     }));
   }
 
-  onTouchDown(e) {
+  onPointerDown(e) {
+    if (e.button !== undefined && e.button !== 0) return;
     this.isDown = true;
+    this.pointerId = e.pointerId ?? null;
+    this.gestureAxis = null;
     this.scroll.position = this.scroll.current;
-    this.start = e.touches ? e.touches[0].clientX : e.clientX;
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+    this.lastX = e.clientX;
+    this.lastMoveAt = performance.now();
+    this.velocityX = 0;
+
+    if (this.container.setPointerCapture && this.pointerId !== null) {
+      try { this.container.setPointerCapture(this.pointerId); } catch { /* captura opcional */ }
+    }
   }
 
-  onTouchMove(e) {
-    if (!this.isDown) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * (this.scrollSpeed * 0.025);
+  onPointerMove(e) {
+    if (!this.isDown || (this.pointerId !== null && e.pointerId !== this.pointerId)) return;
+
+    const dx = e.clientX - this.startX;
+    const dy = e.clientY - this.startY;
+
+    if (!this.gestureAxis) {
+      if (Math.hypot(dx, dy) < this.dragThreshold) return;
+      this.gestureAxis = Math.abs(dx) > Math.abs(dy) * 1.12 ? 'x' : 'y';
+
+      // Em uma rolagem vertical, entrega o gesto imediatamente para a página.
+      if (this.gestureAxis === 'y') {
+        this.releasePointer(e);
+        return;
+      }
+    }
+
+    if (this.gestureAxis !== 'x') return;
+    if (e.cancelable) e.preventDefault();
+
+    const distance = (this.startX - e.clientX) * (this.scrollSpeed * this.dragSensitivity);
     this.scroll.target = this.scroll.position + distance;
+
+    const now = performance.now();
+    const elapsed = Math.max(now - this.lastMoveAt, 1);
+    this.velocityX = (this.lastX - e.clientX) / elapsed;
+    this.lastX = e.clientX;
+    this.lastMoveAt = now;
   }
 
-  onTouchUp() {
-    if (!this.isDown) return;
-    this.isDown = false;
+  onPointerUp(e) {
+    if (!this.isDown || (this.pointerId !== null && e.pointerId !== this.pointerId)) return;
+
+    if (this.gestureAxis === 'x' && this.mobile && Math.abs(this.velocityX) > 0.18 && this.medias?.[0]) {
+      // Um swipe curto e decidido avança pelo menos um produto.
+      const width = this.medias[0].width;
+      const direction = this.velocityX > 0 ? 1 : -1;
+      const snapped = Math.round(this.scroll.target / width) * width;
+      this.scroll.target = snapped + width * direction;
+    }
+
+    this.releasePointer(e);
     this.onCheck();
   }
 
+  releasePointer(e) {
+    if (this.container.releasePointerCapture && this.pointerId !== null) {
+      try { this.container.releasePointerCapture(this.pointerId); } catch { /* captura opcional */ }
+    }
+    this.isDown = false;
+    this.pointerId = null;
+    this.gestureAxis = null;
+  }
+
   onWheel(e) {
+    // Em telas touch o scroll vertical deve continuar pertencendo à página.
+    if (this.mobile) return;
     const delta = e.deltaY || e.wheelDelta || e.detail;
     this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
+    this.onCheckDebounce();
+  }
+
+  step(direction) {
+    if (!this.medias?.[0]) return;
+    const width = this.medias[0].width;
+    this.scroll.target = Math.round(this.scroll.target / width) * width + width * direction;
     this.onCheckDebounce();
   }
 
@@ -417,13 +491,11 @@ class App {
     switch (e.key) {
       case 'ArrowRight':
         e.preventDefault();
-        this.scroll.target += this.scrollSpeed * 5;
-        this.onCheckDebounce();
+        this.step(1);
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        this.scroll.target -= this.scrollSpeed * 5;
-        this.onCheckDebounce();
+        this.step(-1);
         break;
       case 'Home':
         e.preventDefault();
@@ -467,12 +539,10 @@ class App {
   addEventListeners() {
     window.addEventListener('resize', this.onResize);
     this.container.addEventListener('wheel', this.onWheel, { passive: true });
-    this.container.addEventListener('mousedown', this.onTouchDown);
-    window.addEventListener('mousemove', this.onTouchMove);
-    window.addEventListener('mouseup', this.onTouchUp);
-    this.container.addEventListener('touchstart', this.onTouchDown, { passive: true });
-    this.container.addEventListener('touchmove', this.onTouchMove, { passive: true });
-    this.container.addEventListener('touchend', this.onTouchUp, { passive: true });
+    this.container.addEventListener('pointerdown', this.onPointerDown);
+    this.container.addEventListener('pointermove', this.onPointerMove, { passive: false });
+    this.container.addEventListener('pointerup', this.onPointerUp);
+    this.container.addEventListener('pointercancel', this.onPointerUp);
     this.container.addEventListener('keydown', this.onKeyDown);
   }
 
@@ -480,12 +550,10 @@ class App {
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.onResize);
     this.container.removeEventListener('wheel', this.onWheel);
-    this.container.removeEventListener('mousedown', this.onTouchDown);
-    window.removeEventListener('mousemove', this.onTouchMove);
-    window.removeEventListener('mouseup', this.onTouchUp);
-    this.container.removeEventListener('touchstart', this.onTouchDown);
-    this.container.removeEventListener('touchmove', this.onTouchMove);
-    this.container.removeEventListener('touchend', this.onTouchUp);
+    this.container.removeEventListener('pointerdown', this.onPointerDown);
+    this.container.removeEventListener('pointermove', this.onPointerMove);
+    this.container.removeEventListener('pointerup', this.onPointerUp);
+    this.container.removeEventListener('pointercancel', this.onPointerUp);
     this.container.removeEventListener('keydown', this.onKeyDown);
     if (this.renderer?.gl?.canvas?.parentNode) this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas);
   }
@@ -520,7 +588,21 @@ export default function CircularGallery({
   scrollEase = 0.05
 }) {
   const containerRef = useRef(null);
+  const appRef = useRef(null);
   const [status, setStatus] = useState('loading');
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
+      : false
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 720px), (pointer: coarse)');
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || !items?.length) return undefined;
@@ -535,13 +617,15 @@ export default function CircularGallery({
 
         app = new App(containerRef.current, {
           items,
-          bend,
+          bend: mobile ? Math.sign(bend || 1) * Math.min(Math.abs(bend), 1.15) : bend,
           textColor,
-          borderRadius,
+          borderRadius: mobile ? Math.max(borderRadius, 0.065) : borderRadius,
           font: resolvedFont,
-          scrollSpeed,
-          scrollEase
+          scrollSpeed: mobile ? Math.max(1.15, scrollSpeed * 0.72) : scrollSpeed,
+          scrollEase,
+          mobile
         });
+        appRef.current = app;
         setStatus('ready');
       })
       .catch(error => {
@@ -552,22 +636,53 @@ export default function CircularGallery({
     return () => {
       isMounted = false;
       if (app) app.destroy();
+      if (appRef.current === app) appRef.current = null;
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
+  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, mobile]);
 
   return React.createElement(
     'div',
-    { className: `circular-gallery-shell circular-gallery-shell--${status}` },
+    { className: `circular-gallery-shell circular-gallery-shell--${status}${mobile ? ' circular-gallery-shell--mobile' : ''}` },
     React.createElement('div', {
       className: 'circular-gallery',
       ref: containerRef,
       tabIndex: 0,
       role: 'region',
-      'aria-label': 'Galeria circular de luminárias. Arraste ou use as setas esquerda e direita para navegar.'
+      'aria-label': mobile
+        ? 'Galeria de luminárias. Deslize para os lados ou use os botões anterior e próximo.'
+        : 'Galeria circular de luminárias. Arraste ou use as setas esquerda e direita para navegar.'
     }),
     status === 'loading'
       ? React.createElement('div', { className: 'circular-gallery-state', role: 'status' }, 'Carregando catálogo…')
       : null,
-    status === 'fallback' ? React.createElement(FallbackGallery, { items }) : null
+    status === 'fallback' ? React.createElement(FallbackGallery, { items }) : null,
+    status === 'ready' && mobile
+      ? React.createElement(
+          'div',
+          { className: 'circular-gallery-mobile-ui', 'aria-label': 'Controles do catálogo' },
+          React.createElement(
+            'button',
+            {
+              type: 'button',
+              className: 'circular-gallery-nav circular-gallery-nav--prev',
+              onClick: () => appRef.current?.step(-1),
+              'aria-label': 'Produto anterior'
+            },
+            '←'
+          ),
+          React.createElement('span', { className: 'circular-gallery-swipe-hint', 'aria-hidden': 'true' }, 'Deslize para explorar'),
+          React.createElement(
+            'button',
+            {
+              type: 'button',
+              className: 'circular-gallery-nav circular-gallery-nav--next',
+              onClick: () => appRef.current?.step(1),
+              'aria-label': 'Próximo produto'
+            },
+            '→'
+          )
+        )
+      : null
   );
+
 }

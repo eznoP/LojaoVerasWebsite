@@ -87,3 +87,82 @@
     flex-basis: min(76vw, 300px);
   }
 }
+
+/* v1.6 · UX mobile */
+.circular-gallery {
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-x: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.circular-gallery-mobile-ui {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 4;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+  border: 1px solid rgba(13, 35, 64, 0.12);
+  border-radius: 999px;
+  background: rgba(252, 249, 242, 0.88);
+  box-shadow: 0 12px 34px rgba(13, 35, 64, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.circular-gallery-nav {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  border: 1px solid rgba(13, 35, 64, 0.18);
+  border-radius: 50%;
+  background: #fffdf8;
+  color: #0d2340;
+  font: 500 1.1rem/1 sans-serif;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.circular-gallery-nav:active {
+  transform: scale(0.96);
+}
+
+.circular-gallery-nav:focus-visible {
+  outline: 2px solid #0d2340;
+  outline-offset: 2px;
+}
+
+.circular-gallery-swipe-hint {
+  color: #5f6873;
+  font: 500 0.68rem/1 'Jost', sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .circular-gallery-mobile-ui {
+    display: flex;
+  }
+
+  .circular-gallery {
+    cursor: default;
+  }
+
+  .circular-gallery-fallback-list {
+    padding-bottom: 74px;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 390px) {
+  .circular-gallery-swipe-hint {
+    display: none;
+  }
+}
