@@ -336,11 +336,12 @@ class Media {
 }
 
 class App {
-  constructor(container, { items, bend, textColor = '#0d2340', borderRadius = 0, font = '500 28px Jost', scrollSpeed = 2, scrollEase = 0.05, mobile = false } = {}) {
+  constructor(container, { items, bend, textColor = '#0d2340', borderRadius = 0, font = '500 28px Jost', scrollSpeed = 2, scrollEase = 0.05, mobile = false, onSelect } = {}) {
     autoBind(this);
     this.container = container;
     this.scrollSpeed = scrollSpeed;
     this.mobile = mobile;
+    this.onSelect = typeof onSelect === 'function' ? onSelect : null;
     this.pointerId = null;
     this.gestureAxis = null;
     this.dragThreshold = mobile ? 9 : 5;
@@ -451,6 +452,10 @@ class App {
   onPointerUp(e) {
     if (!this.isDown || (this.pointerId !== null && e.pointerId !== this.pointerId)) return;
 
+    const moved = Math.hypot(e.clientX - this.startX, e.clientY - this.startY);
+    const tapLimit = this.mobile ? 16 : 10;
+    const isTap = moved <= tapLimit;
+
     if (this.gestureAxis === 'x' && this.mobile && Math.abs(this.velocityX) > 0.18 && this.medias?.[0]) {
       // Um swipe curto e decidido avança pelo menos um produto.
       const width = this.medias[0].width;
@@ -459,8 +464,37 @@ class App {
       this.scroll.target = snapped + width * direction;
     }
 
+    if (isTap) this.selectAt(e.clientX);
+
     this.releasePointer(e);
     this.onCheck();
+  }
+
+  selectAt(clientX) {
+    if (!this.onSelect || !this.medias?.length || !this.viewport) return;
+    const rect = this.container.getBoundingClientRect();
+    if (!rect.width) return;
+
+    const normalizedX = (clientX - rect.left) / rect.width - 0.5;
+    const worldX = normalizedX * this.viewport.width;
+    let closestIndex = -1;
+    let closestDistance = Infinity;
+
+    this.medias.forEach((media, index) => {
+      const distance = Math.abs(media.plane.position.x - worldX);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    if (closestIndex < 0) return;
+    const media = this.medias[closestIndex];
+    const hitTolerance = Math.max(media.plane.scale.x * 0.72, 1.2);
+    if (closestDistance > hitTolerance) return;
+
+    const item = this.mediasImages[closestIndex];
+    if (item) this.onSelect(item);
   }
 
   releasePointer(e) {
@@ -502,6 +536,14 @@ class App {
         this.scroll.target = 0;
         this.onCheckDebounce();
         break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        {
+          const rect = this.container.getBoundingClientRect();
+          this.selectAt(rect.left + rect.width / 2);
+        }
+        break;
       default:
         break;
     }
@@ -542,7 +584,7 @@ class App {
     this.container.addEventListener('pointerdown', this.onPointerDown);
     this.container.addEventListener('pointermove', this.onPointerMove, { passive: false });
     this.container.addEventListener('pointerup', this.onPointerUp);
-    this.container.addEventListener('pointercancel', this.onPointerUp);
+    this.container.addEventListener('pointercancel', this.releasePointer);
     this.container.addEventListener('keydown', this.onKeyDown);
   }
 
@@ -553,13 +595,13 @@ class App {
     this.container.removeEventListener('pointerdown', this.onPointerDown);
     this.container.removeEventListener('pointermove', this.onPointerMove);
     this.container.removeEventListener('pointerup', this.onPointerUp);
-    this.container.removeEventListener('pointercancel', this.onPointerUp);
+    this.container.removeEventListener('pointercancel', this.releasePointer);
     this.container.removeEventListener('keydown', this.onKeyDown);
     if (this.renderer?.gl?.canvas?.parentNode) this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas);
   }
 }
 
-function FallbackGallery({ items }) {
+function FallbackGallery({ items, onSelect }) {
   return React.createElement(
     'div',
     {
@@ -569,8 +611,15 @@ function FallbackGallery({ items }) {
     },
     items.map((item, index) =>
       React.createElement(
-        'article',
-        { className: 'circular-gallery-fallback-card', role: 'listitem', key: `${item.image}-${index}` },
+        'button',
+        {
+          type: 'button',
+          className: 'circular-gallery-fallback-card',
+          role: 'listitem',
+          key: `${item.image}-${index}`,
+          onClick: () => onSelect?.(item),
+          'aria-label': `Ver detalhes de ${item.text || 'luminária'}`
+        },
         React.createElement('img', { src: item.image, alt: item.text || 'Luminária do Lojão Veras', loading: 'lazy' }),
         React.createElement('span', null, item.text)
       )
@@ -585,7 +634,8 @@ export default function CircularGallery({
   borderRadius = 0.05,
   font = '500 28px Jost',
   scrollSpeed = 2,
-  scrollEase = 0.05
+  scrollEase = 0.05,
+  onSelect
 }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
@@ -623,7 +673,8 @@ export default function CircularGallery({
           font: resolvedFont,
           scrollSpeed: mobile ? Math.max(1.15, scrollSpeed * 0.72) : scrollSpeed,
           scrollEase,
-          mobile
+          mobile,
+          onSelect
         });
         appRef.current = app;
         setStatus('ready');
@@ -638,7 +689,7 @@ export default function CircularGallery({
       if (app) app.destroy();
       if (appRef.current === app) appRef.current = null;
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, mobile]);
+  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, mobile, onSelect]);
 
   return React.createElement(
     'div',
@@ -649,13 +700,13 @@ export default function CircularGallery({
       tabIndex: 0,
       role: 'region',
       'aria-label': mobile
-        ? 'Galeria de luminárias. Deslize para os lados ou use os botões anterior e próximo.'
-        : 'Galeria circular de luminárias. Arraste ou use as setas esquerda e direita para navegar.'
+        ? 'Galeria de luminárias. Deslize para os lados, toque em um produto para ver detalhes ou use os botões anterior e próximo.'
+        : 'Galeria circular de luminárias. Arraste ou use as setas para navegar e clique em um produto para ver detalhes.'
     }),
     status === 'loading'
       ? React.createElement('div', { className: 'circular-gallery-state', role: 'status' }, 'Carregando catálogo…')
       : null,
-    status === 'fallback' ? React.createElement(FallbackGallery, { items }) : null,
+    status === 'fallback' ? React.createElement(FallbackGallery, { items, onSelect }) : null,
     status === 'ready' && mobile
       ? React.createElement(
           'div',

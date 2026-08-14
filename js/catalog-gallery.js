@@ -7,29 +7,49 @@ const status = document.getElementById('catalogStatus');
 
 const products = [
   {
+    id: 'pendente-escultural-madeira',
     image: './assets/produtos/pendente-escultural-madeira.webp',
-    text: 'Pendente Escultural',
-    category: 'pendente'
+    text: 'Pendente Escultural de Madeira',
+    category: 'pendente',
+    categoryLabel: 'Pendente',
+    description: 'Pendente de madeira com composição escultural e presença marcante. Ideal para quem busca uma peça decorativa que também funcione como ponto de luz.',
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
   },
   {
+    id: 'pendente-organico-madeira',
     image: './assets/produtos/pendente-organico-madeira.webp',
-    text: 'Pendente Orgânico',
-    category: 'pendente'
+    text: 'Pendente Orgânico de Madeira',
+    category: 'pendente',
+    categoryLabel: 'Pendente',
+    description: 'Modelo de madeira com linhas orgânicas e visual leve, pensado para compor ambientes acolhedores e projetos com materiais naturais.',
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
   },
   {
+    id: 'arandela-lanterna-preta',
     image: './assets/produtos/arandela-lanterna-preta.webp',
-    text: 'Arandela Lanterna',
-    category: 'arandela'
+    text: 'Arandela Lanterna Preta',
+    category: 'arandela',
+    categoryLabel: 'Arandela',
+    description: 'Arandela em formato de lanterna com acabamento preto e linguagem clássica, indicada para criar pontos de iluminação decorativa em paredes.',
+    detailNote: 'Dimensões, acabamento e disponibilidade devem ser confirmados com a equipe do Lojão Veras.'
   },
   {
+    id: 'pendente-aramado-preto',
     image: './assets/produtos/pendente-aramado-preto.webp',
-    text: 'Pendente Aramado',
-    category: 'pendente'
+    text: 'Pendente Aramado Preto',
+    category: 'pendente',
+    categoryLabel: 'Pendente',
+    description: 'Pendente com estrutura aramada preta e desenho contemporâneo, valorizando a lâmpada e trazendo leveza visual à composição.',
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
   },
   {
+    id: 'pendente-cupula-madeira',
     image: './assets/produtos/pendente-cupula-madeira.webp',
-    text: 'Pendente Cúpula',
-    category: 'pendente'
+    text: 'Pendente Cúpula de Madeira',
+    category: 'pendente',
+    categoryLabel: 'Pendente',
+    description: 'Pendente com cúpula em madeira e desenho limpo, combinando iluminação funcional com acabamento de aspecto natural.',
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
   }
 ];
 
@@ -58,6 +78,18 @@ function updateStatus(filter, visible) {
     : `Ainda não há fotos de ${categoryNames[filter] || 'produtos desta categoria'} no catálogo.`;
 }
 
+function openProduct(product) {
+  if (!product) return;
+  window.dispatchEvent(new CustomEvent('lv:open-product', {
+    detail: {
+      ...product,
+      name: product.text,
+      source: 'luminaria',
+      optionGroups: []
+    }
+  }));
+}
+
 function destroyReactRoot() {
   if (liveRoot) {
     liveRoot.unmount();
@@ -81,10 +113,10 @@ function renderStaticFallback(items) {
   mount.innerHTML = `
     <div class="circular-gallery-fallback-list" role="list" aria-label="Catálogo de luminárias">
       ${items.map(item => `
-        <article class="circular-gallery-fallback-card" role="listitem">
+        <button class="circular-gallery-fallback-card" type="button" role="listitem" data-catalog-product-id="${item.id}" aria-label="Ver detalhes de ${item.text}">
           <img src="${item.image}" alt="${item.text}" loading="lazy" />
           <span>${item.text}</span>
-        </article>`).join('')}
+        </button>`).join('')}
     </div>`;
 }
 
@@ -103,6 +135,12 @@ async function ensureComponent() {
 }
 
 if (mount && filters) {
+  mount.addEventListener('click', event => {
+    const fallbackCard = event.target.closest('[data-catalog-product-id]');
+    if (!fallbackCard) return;
+    openProduct(products.find(product => product.id === fallbackCard.dataset.catalogProductId));
+  });
+
   const safeRender = async filter => {
     const token = ++renderToken;
     const visible = visibleProducts(filter);
@@ -124,34 +162,24 @@ if (mount && filters) {
       const Gallery = await ensureComponent();
       if (token !== renderToken) return;
 
+      const galleryProps = {
+        items: visible,
+        bend: 3,
+        textColor: '#0d2340',
+        borderRadius: 0.055,
+        font: '500 28px Jost',
+        scrollSpeed: 2,
+        scrollEase: 0.045,
+        onSelect: openProduct
+      };
+
       if (typeof ReactDOM.createRoot === 'function') {
         destroyReactRoot();
         mount.innerHTML = '';
         liveRoot = ReactDOM.createRoot(mount);
-        liveRoot.render(
-          React.createElement(Gallery, {
-            items: visible,
-            bend: 3,
-            textColor: '#0d2340',
-            borderRadius: 0.055,
-            font: '500 28px Jost',
-            scrollSpeed: 2,
-            scrollEase: 0.045
-          })
-        );
+        liveRoot.render(React.createElement(Gallery, galleryProps));
       } else {
-        ReactDOM.render(
-          React.createElement(Gallery, {
-            items: visible,
-            bend: 3,
-            textColor: '#0d2340',
-            borderRadius: 0.055,
-            font: '500 28px Jost',
-            scrollSpeed: 2,
-            scrollEase: 0.045
-          }),
-          mount
-        );
+        ReactDOM.render(React.createElement(Gallery, galleryProps), mount);
       }
     } catch (error) {
       console.error('Catálogo: falha ao iniciar CircularGallery. Usando versão alternativa.', error);

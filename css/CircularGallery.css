@@ -166,3 +166,18 @@
     display: none;
   }
 }
+
+/* v1.7 · cards também abrem detalhes do produto */
+.circular-gallery-fallback-card {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.circular-gallery-fallback-card:focus-visible {
+  outline: 2px solid var(--brass, #0d2340);
+  outline-offset: 5px;
+  border-radius: 18px;
+}
