@@ -538,6 +538,33 @@ class App {
     this.onCheck();
   }
 
+  getFrontMediaIndex() {
+    if (!this.medias?.length) return -1;
+
+    let frontIndex = -1;
+    let frontDistance = Infinity;
+
+    this.medias.forEach((media, index) => {
+      const distance = Math.abs(media.plane.position.x);
+      if (distance < frontDistance) {
+        frontDistance = distance;
+        frontIndex = index;
+      }
+    });
+
+    return frontIndex;
+  }
+
+  centerMedia(index) {
+    const media = this.medias?.[index];
+    if (!media) return;
+
+    // A posição horizontal é calculada como x - scroll.current - extra.
+    // Logo, x - extra é exatamente o valor de scroll que coloca este card no centro.
+    this.scroll.target = media.x - media.extra;
+    this.onCheckDebounce();
+  }
+
   selectAt(clientX) {
     if (!this.onSelect || !this.medias?.length || !this.viewport) return;
     const rect = this.container.getBoundingClientRect();
@@ -560,6 +587,21 @@ class App {
     const media = this.medias[closestIndex];
     const hitTolerance = Math.max(media.baseScaleX * 0.76, 1.2);
     if (closestDistance > hitTolerance) return;
+
+    const frontIndex = this.getFrontMediaIndex();
+    const centerTolerance = Math.max(media.baseScaleX * (this.mobile ? 0.11 : 0.09), 0.24);
+    const settleTolerance = Math.max(media.width * 0.08, 0.12);
+    const isCentered =
+      closestIndex === frontIndex &&
+      Math.abs(media.plane.position.x) <= centerTolerance &&
+      Math.abs(this.scroll.target - this.scroll.current) <= settleTolerance;
+
+    // Primeiro clique/toque em um item de segundo plano apenas o leva ao centro.
+    // O modal só abre quando o mesmo card já é o item em primeiro plano e recebe outro clique.
+    if (!isCentered) {
+      this.centerMedia(closestIndex);
+      return;
+    }
 
     const item = this.mediasImages[closestIndex];
     if (item) this.onSelect(item);
@@ -800,8 +842,8 @@ export default function CircularGallery({
       tabIndex: 0,
       role: 'region',
       'aria-label': mobile
-        ? 'Galeria de luminárias. Deslize para os lados, toque em um produto para ver detalhes ou use os botões anterior e próximo.'
-        : 'Galeria circular de luminárias. Arraste ou use as setas para navegar e clique em um produto para ver detalhes.'
+        ? 'Galeria de luminárias. Deslize para os lados. O primeiro toque seleciona o produto e o leva ao centro; toque novamente para abrir os detalhes.'
+        : 'Galeria circular de luminárias. Arraste ou use as setas para navegar. O primeiro clique seleciona e centraliza o produto; clique novamente para abrir os detalhes.'
     }),
     status === 'loading'
       ? React.createElement('div', { className: 'circular-gallery-state', role: 'status' }, 'Carregando catálogo…')
