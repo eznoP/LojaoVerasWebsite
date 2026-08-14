@@ -90,26 +90,51 @@ function openProduct(product) {
   }));
 }
 
-function destroyReactRoot() {
-  if (liveRoot) {
-    liveRoot.unmount();
-    liveRoot = null;
+function emptyElement() {
+  return React.createElement(
+    'div',
+    { className: 'catalog-empty', role: 'status' },
+    React.createElement('div', null,
+      React.createElement('span', { className: 'catalog-empty-kicker' }, 'Catálogo em atualização'),
+      React.createElement('strong', null, 'Novas fotos serão adicionadas em breve.'),
+      React.createElement('p', null, 'Enquanto isso, consulte os modelos disponíveis diretamente na loja ou pelo WhatsApp.')
+    )
+  );
+}
+
+function ensureRoot() {
+  if (!React || !ReactDOM || typeof ReactDOM.createRoot !== 'function') return null;
+  if (!liveRoot) {
+    mount.innerHTML = '';
+    liveRoot = ReactDOM.createRoot(mount);
   }
+  return liveRoot;
 }
 
 function renderEmpty(filter) {
   updateStatus(filter, []);
-  destroyReactRoot();
+
+  if (React && ReactDOM && typeof ReactDOM.createRoot === 'function') {
+    ensureRoot()?.render(emptyElement());
+    return;
+  }
+
   mount.innerHTML = `
     <div class="catalog-empty" role="status">
-      <span class="catalog-empty-kicker">Catálogo em atualização</span>
-      <strong>Novas fotos serão adicionadas em breve.</strong>
-      <p>Enquanto isso, consulte os modelos disponíveis diretamente na loja ou pelo WhatsApp.</p>
+      <div>
+        <span class="catalog-empty-kicker">Catálogo em atualização</span>
+        <strong>Novas fotos serão adicionadas em breve.</strong>
+        <p>Enquanto isso, consulte os modelos disponíveis diretamente na loja ou pelo WhatsApp.</p>
+      </div>
     </div>`;
 }
 
 function renderStaticFallback(items) {
-  destroyReactRoot();
+  if (liveRoot) {
+    liveRoot.unmount();
+    liveRoot = null;
+  }
+
   mount.innerHTML = `
     <div class="circular-gallery-fallback-list" role="list" aria-label="Catálogo de luminárias">
       ${items.map(item => `
@@ -156,7 +181,9 @@ if (mount && filters) {
       return;
     }
 
-    mount.innerHTML = '<div class="circular-catalog-fallback">Carregando catálogo…</div>';
+    if (!liveRoot) {
+      mount.innerHTML = '<div class="circular-catalog-fallback">Carregando catálogo…</div>';
+    }
 
     try {
       const Gallery = await ensureComponent();
@@ -174,10 +201,7 @@ if (mount && filters) {
       };
 
       if (typeof ReactDOM.createRoot === 'function') {
-        destroyReactRoot();
-        mount.innerHTML = '';
-        liveRoot = ReactDOM.createRoot(mount);
-        liveRoot.render(React.createElement(Gallery, galleryProps));
+        ensureRoot()?.render(React.createElement(Gallery, galleryProps));
       } else {
         ReactDOM.render(React.createElement(Gallery, galleryProps), mount);
       }

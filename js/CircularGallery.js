@@ -64,6 +64,15 @@ function lerp(p1, p2, t) {
   return p1 + (p2 - p1) * t;
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function smoothstep01(value) {
+  const t = clamp(value, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
 function autoBind(instance) {
   const proto = Object.getPrototypeOf(instance);
   Object.getOwnPropertyNames(proto).forEach(key => {
@@ -79,7 +88,7 @@ async function resolveFont(font) {
       await document.fonts.load(font);
       await document.fonts.ready;
     } catch {
-      // O navegador pode usar a fonte de fallback sem comprometer a galeria.
+      // A fonte de fallback mantém a galeria funcional.
     }
   }
   return font;
@@ -111,11 +120,10 @@ function createTextTexture(gl, text, font = '500 30px sans-serif', color = '#0d2
 }
 
 class Title {
-  constructor({ gl, plane, renderer, text, textColor = '#0d2340', font = '500 30px sans-serif' }) {
+  constructor({ gl, plane, text, textColor = '#0d2340', font = '500 30px sans-serif' }) {
     autoBind(this);
     this.gl = gl;
     this.plane = plane;
-    this.renderer = renderer;
     this.text = text;
     this.textColor = textColor;
     this.font = font;
@@ -150,25 +158,26 @@ class Title {
       uniforms: { tMap: { value: texture } },
       transparent: true
     });
+
     this.mesh = new Mesh(this.gl, { geometry, program });
     const aspect = width / height;
     const textHeight = this.plane.scale.y * 0.13;
     const textWidth = textHeight * aspect;
     this.mesh.scale.set(textWidth, textHeight, 1);
     this.mesh.position.y = -this.plane.scale.y * 0.5 - textHeight * 0.5 - 0.08;
+    this.mesh.position.z = 0.04;
     this.mesh.setParent(this.plane);
   }
 }
 
 class Media {
-  constructor({ geometry, gl, image, index, length, renderer, scene, screen, text, viewport, bend, textColor, borderRadius = 0, font, mobile = false }) {
+  constructor({ geometry, gl, image, index, length, scene, screen, text, viewport, bend, textColor, borderRadius = 0, font, mobile = false }) {
     this.extra = 0;
     this.geometry = geometry;
     this.gl = gl;
     this.image = image;
     this.index = index;
     this.length = length;
-    this.renderer = renderer;
     this.scene = scene;
     this.screen = screen;
     this.text = text;
@@ -178,6 +187,7 @@ class Media {
     this.borderRadius = borderRadius;
     this.font = font;
     this.mobile = mobile;
+    this.focus = 0;
     this.createShader();
     this.createMesh();
     this.onResize();
@@ -186,8 +196,10 @@ class Media {
 
   createShader() {
     const texture = new Texture(this.gl, { generateMipmaps: true });
+    this.texture = texture;
+
     this.program = new Program(this.gl, {
-      depthTest: false,
+      depthTest: true,
       depthWrite: false,
       vertex: `
         precision highp float;
@@ -211,6 +223,7 @@ class Media {
         uniform vec2 uPlaneSizes;
         uniform sampler2D tMap;
         uniform float uBorderRadius;
+        uniform float uFocus;
         varying vec2 vUv;
 
         float roundedBoxSDF(vec2 p, vec2 b, float r) {
@@ -228,10 +241,17 @@ class Media {
             vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
           );
           vec4 color = texture2D(tMap, uv);
+
+          float luminance = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+          float saturation = mix(0.48, 1.0, uFocus);
+          vec3 focusedColor = mix(vec3(luminance), color.rgb, saturation);
+          focusedColor *= mix(0.72, 1.07, uFocus);
+          focusedColor = mix(focusedColor, focusedColor + vec3(0.035, 0.018, 0.0), uFocus * 0.45);
+
           float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
           float edgeSmooth = 0.002;
           float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
-          gl_FragColor = vec4(color.rgb, alpha);
+          gl_FragColor = vec4(focusedColor, alpha);
         }
       `,
       uniforms: {
@@ -240,7 +260,8 @@ class Media {
         uImageSizes: { value: [1, 1] },
         uSpeed: { value: 0 },
         uTime: { value: 100 * Math.random() },
-        uBorderRadius: { value: this.borderRadius }
+        uBorderRadius: { value: this.borderRadius },
+        uFocus: { value: 0 }
       },
       transparent: true
     });
@@ -263,7 +284,6 @@ class Media {
     this.title = new Title({
       gl: this.gl,
       plane: this.plane,
-      renderer: this.renderer,
       text: this.text,
       textColor: this.textColor,
       font: this.font
@@ -294,11 +314,27 @@ class Media {
       }
     }
 
+    const focusRadius = Math.max(this.width * (this.mobile ? 1.15 : 1.42), this.viewport.width * (this.mobile ? 0.38 : 0.27));
+    const proximity = 1 - clamp(Math.abs(x) / focusRadius, 0, 1);
+    const focus = smoothstep01(proximity);
+    this.focus = lerp(this.focus, focus, this.mobile ? 0.18 : 0.14);
+
+    const scaleBoost = 1 + this.focus * (this.mobile ? 0.075 : 0.12);
+    this.plane.scale.x = this.baseScaleX * scaleBoost;
+    this.plane.scale.y = this.baseScaleY * scaleBoost;
+    this.plane.position.z = this.focus * (this.mobile ? 0.48 : 1.05);
+
     this.speed = scroll.current - scroll.last;
     this.program.uniforms.uTime.value += 0.04;
     this.program.uniforms.uSpeed.value = this.speed;
+    this.program.uniforms.uFocus.value = this.focus;
+    this.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
 
-    const planeOffset = this.plane.scale.x / 2;
+    if (this.title?.mesh) {
+      this.title.mesh.position.z = 0.04 + this.focus * 0.09;
+    }
+
+    const planeOffset = this.baseScaleX / 2;
     const viewportOffset = this.viewport.width / 2;
     this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
     this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
@@ -320,18 +356,24 @@ class Media {
 
     this.scale = this.screen.height / 1500;
     if (this.mobile) {
-      // Cards um pouco maiores no celular: leitura melhor sem perder o próximo item de vista.
-      this.plane.scale.y = this.viewport.height * 0.66;
-      this.plane.scale.x = this.viewport.height * 0.50;
+      this.baseScaleY = this.viewport.height * 0.66;
+      this.baseScaleX = this.viewport.height * 0.50;
     } else {
-      this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
-      this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+      this.baseScaleY = (this.viewport.height * (900 * this.scale)) / this.screen.height;
+      this.baseScaleX = (this.viewport.width * (700 * this.scale)) / this.screen.width;
     }
-    this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
-    this.padding = 2;
-    this.width = this.plane.scale.x + this.padding;
+
+    this.plane.scale.y = this.baseScaleY;
+    this.plane.scale.x = this.baseScaleX;
+    this.plane.program.uniforms.uPlaneSizes.value = [this.baseScaleX, this.baseScaleY];
+    this.padding = this.mobile ? 1.45 : 2;
+    this.width = this.baseScaleX + this.padding;
     this.widthTotal = this.width * this.length;
     this.x = this.width * this.index;
+  }
+
+  destroy() {
+    if (this.plane) this.plane.setParent(null);
   }
 }
 
@@ -339,6 +381,10 @@ class App {
   constructor(container, { items, bend, textColor = '#0d2340', borderRadius = 0, font = '500 28px Jost', scrollSpeed = 2, scrollEase = 0.05, mobile = false, onSelect } = {}) {
     autoBind(this);
     this.container = container;
+    this.bend = bend;
+    this.textColor = textColor;
+    this.borderRadius = borderRadius;
+    this.font = font;
     this.scrollSpeed = scrollSpeed;
     this.mobile = mobile;
     this.onSelect = typeof onSelect === 'function' ? onSelect : null;
@@ -353,7 +399,7 @@ class App {
     this.createScene();
     this.onResize();
     this.createGeometry();
-    this.createMedias(items, bend, textColor, borderRadius, font);
+    this.createMedias(items);
     this.onResize();
     this.update();
     this.addEventListeners();
@@ -380,26 +426,50 @@ class App {
     this.planeGeometry = new Plane(this.gl, { heightSegments: 50, widthSegments: 100 });
   }
 
-  createMedias(items, bend = 3, textColor, borderRadius, font) {
+  createMedias(items) {
     const galleryItems = items && items.length ? items : [];
-    this.mediasImages = galleryItems.concat(galleryItems);
+    if (!galleryItems.length) {
+      this.mediasImages = [];
+      this.medias = [];
+      return;
+    }
+
+    const repetitions = Math.max(2, Math.ceil(8 / galleryItems.length));
+    this.mediasImages = Array.from({ length: repetitions }, () => galleryItems).flat();
     this.medias = this.mediasImages.map((data, index) => new Media({
       geometry: this.planeGeometry,
       gl: this.gl,
       image: data.image,
       index,
       length: this.mediasImages.length,
-      renderer: this.renderer,
       scene: this.scene,
       screen: this.screen,
       text: data.text,
       viewport: this.viewport,
-      bend,
-      textColor,
-      borderRadius,
-      font,
+      bend: this.bend,
+      textColor: this.textColor,
+      borderRadius: this.borderRadius,
+      font: this.font,
       mobile: this.mobile
     }));
+  }
+
+  updateGallery({ items, bend, textColor, borderRadius, font, onSelect }) {
+    this.bend = bend;
+    this.textColor = textColor;
+    this.borderRadius = borderRadius;
+    this.font = font;
+    this.onSelect = typeof onSelect === 'function' ? onSelect : null;
+
+    if (this.medias) this.medias.forEach(media => media.destroy());
+    this.medias = [];
+    this.mediasImages = [];
+    this.scroll.current = 0;
+    this.scroll.target = 0;
+    this.scroll.last = 0;
+    this.scroll.position = 0;
+    this.createMedias(items);
+    this.onResize();
   }
 
   onPointerDown(e) {
@@ -429,7 +499,6 @@ class App {
       if (Math.hypot(dx, dy) < this.dragThreshold) return;
       this.gestureAxis = Math.abs(dx) > Math.abs(dy) * 1.12 ? 'x' : 'y';
 
-      // Em uma rolagem vertical, entrega o gesto imediatamente para a página.
       if (this.gestureAxis === 'y') {
         this.releasePointer(e);
         return;
@@ -452,12 +521,11 @@ class App {
   onPointerUp(e) {
     if (!this.isDown || (this.pointerId !== null && e.pointerId !== this.pointerId)) return;
 
-    const moved = Math.hypot(e.clientX - this.startX, e.clientY - this.startY);
-    const tapLimit = this.mobile ? 16 : 10;
-    const isTap = moved <= tapLimit;
+    const dx = e.clientX - this.startX;
+    const dy = e.clientY - this.startY;
+    const isTap = Math.hypot(dx, dy) < this.dragThreshold && !this.gestureAxis;
 
-    if (this.gestureAxis === 'x' && this.mobile && Math.abs(this.velocityX) > 0.18 && this.medias?.[0]) {
-      // Um swipe curto e decidido avança pelo menos um produto.
+    if (this.gestureAxis === 'x' && Math.abs(this.velocityX) > 0.18 && this.medias?.[0]) {
       const width = this.medias[0].width;
       const direction = this.velocityX > 0 ? 1 : -1;
       const snapped = Math.round(this.scroll.target / width) * width;
@@ -490,7 +558,7 @@ class App {
 
     if (closestIndex < 0) return;
     const media = this.medias[closestIndex];
-    const hitTolerance = Math.max(media.plane.scale.x * 0.72, 1.2);
+    const hitTolerance = Math.max(media.baseScaleX * 0.76, 1.2);
     if (closestDistance > hitTolerance) return;
 
     const item = this.mediasImages[closestIndex];
@@ -507,7 +575,6 @@ class App {
   }
 
   onWheel(e) {
-    // Em telas touch o scroll vertical deve continuar pertencendo à página.
     if (this.mobile) return;
     const delta = e.deltaY || e.wheelDelta || e.detail;
     this.scroll.target += (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
@@ -597,7 +664,14 @@ class App {
     this.container.removeEventListener('pointerup', this.onPointerUp);
     this.container.removeEventListener('pointercancel', this.releasePointer);
     this.container.removeEventListener('keydown', this.onKeyDown);
+    if (this.medias) this.medias.forEach(media => media.destroy());
     if (this.renderer?.gl?.canvas?.parentNode) this.renderer.gl.canvas.parentNode.removeChild(this.renderer.gl.canvas);
+
+    try {
+      this.renderer?.gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch {
+      // Liberação explícita é opcional.
+    }
   }
 }
 
@@ -639,12 +713,15 @@ export default function CircularGallery({
 }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
+  const latestConfigRef = useRef({ items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, onSelect });
   const [status, setStatus] = useState('loading');
   const [mobile, setMobile] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
       : false
   );
+
+  latestConfigRef.current = { items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, onSelect };
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 720px), (pointer: coarse)');
@@ -655,26 +732,28 @@ export default function CircularGallery({
   }, []);
 
   useEffect(() => {
-    if (!containerRef.current || !items?.length) return undefined;
+    if (!containerRef.current) return undefined;
 
     let app;
     let isMounted = true;
     setStatus('loading');
 
-    Promise.all([loadOgl(), resolveFont(font)])
+    const current = latestConfigRef.current;
+
+    Promise.all([loadOgl(), resolveFont(current.font)])
       .then(([, resolvedFont]) => {
         if (!isMounted || !containerRef.current) return;
 
         app = new App(containerRef.current, {
-          items,
-          bend: mobile ? Math.sign(bend || 1) * Math.min(Math.abs(bend), 1.15) : bend,
-          textColor,
-          borderRadius: mobile ? Math.max(borderRadius, 0.065) : borderRadius,
+          items: current.items,
+          bend: mobile ? Math.sign(current.bend || 1) * Math.min(Math.abs(current.bend), 1.15) : current.bend,
+          textColor: current.textColor,
+          borderRadius: mobile ? Math.max(current.borderRadius, 0.065) : current.borderRadius,
           font: resolvedFont,
-          scrollSpeed: mobile ? Math.max(1.15, scrollSpeed * 0.72) : scrollSpeed,
-          scrollEase,
+          scrollSpeed: mobile ? Math.max(1.15, current.scrollSpeed * 0.72) : current.scrollSpeed,
+          scrollEase: current.scrollEase,
           mobile,
-          onSelect
+          onSelect: current.onSelect
         });
         appRef.current = app;
         setStatus('ready');
@@ -689,7 +768,28 @@ export default function CircularGallery({
       if (app) app.destroy();
       if (appRef.current === app) appRef.current = null;
     };
-  }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase, mobile, onSelect]);
+  }, [mobile]);
+
+  useEffect(() => {
+    if (status !== 'ready' || !appRef.current || !items?.length) return undefined;
+
+    let cancelled = false;
+    resolveFont(font).then(resolvedFont => {
+      if (cancelled || !appRef.current) return;
+      appRef.current.updateGallery({
+        items,
+        bend: mobile ? Math.sign(bend || 1) * Math.min(Math.abs(bend), 1.15) : bend,
+        textColor,
+        borderRadius: mobile ? Math.max(borderRadius, 0.065) : borderRadius,
+        font: resolvedFont,
+        onSelect
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items, bend, textColor, borderRadius, font, onSelect, status, mobile]);
 
   return React.createElement(
     'div',
@@ -735,5 +835,4 @@ export default function CircularGallery({
         )
       : null
   );
-
 }
