@@ -3,9 +3,8 @@ const ReactDOM = window.ReactDOM;
 
 const mount = document.getElementById('circularCatalog');
 const filters = document.getElementById('filters');
-const status = document.getElementById('catalogStatus');
 
-const products = [
+const STATIC_LIGHTING_PRODUCTS = [
   {
     id: 'pendente-escultural-madeira',
     image: './assets/produtos/pendente-escultural-madeira.webp',
@@ -13,7 +12,8 @@ const products = [
     category: 'pendente',
     categoryLabel: 'Pendente',
     description: 'Pendente de madeira com composição escultural e presença marcante. Ideal para quem busca uma peça decorativa que também funcione como ponto de luz.',
-    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.',
+    optionGroups: []
   },
   {
     id: 'pendente-organico-madeira',
@@ -22,7 +22,8 @@ const products = [
     category: 'pendente',
     categoryLabel: 'Pendente',
     description: 'Modelo de madeira com linhas orgânicas e visual leve, pensado para compor ambientes acolhedores e projetos com materiais naturais.',
-    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.',
+    optionGroups: []
   },
   {
     id: 'arandela-lanterna-preta',
@@ -31,7 +32,8 @@ const products = [
     category: 'arandela',
     categoryLabel: 'Arandela',
     description: 'Arandela em formato de lanterna com acabamento preto e linguagem clássica, indicada para criar pontos de iluminação decorativa em paredes.',
-    detailNote: 'Dimensões, acabamento e disponibilidade devem ser confirmados com a equipe do Lojão Veras.'
+    detailNote: 'Dimensões, acabamento e disponibilidade devem ser confirmados com a equipe do Lojão Veras.',
+    optionGroups: []
   },
   {
     id: 'pendente-aramado-preto',
@@ -40,7 +42,8 @@ const products = [
     category: 'pendente',
     categoryLabel: 'Pendente',
     description: 'Pendente com estrutura aramada preta e desenho contemporâneo, valorizando a lâmpada e trazendo leveza visual à composição.',
-    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.',
+    optionGroups: []
   },
   {
     id: 'pendente-cupula-madeira',
@@ -49,33 +52,38 @@ const products = [
     category: 'pendente',
     categoryLabel: 'Pendente',
     description: 'Pendente com cúpula em madeira e desenho limpo, combinando iluminação funcional com acabamento de aspecto natural.',
-    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.'
+    detailNote: 'Cores, dimensões e disponibilidade devem ser confirmadas com a equipe do Lojão Veras.',
+    optionGroups: []
   }
 ];
 
-const categoryNames = {
-  todos: 'todos os produtos fotografados',
-  pendente: 'pendentes',
-  lustre: 'lustres',
-  arandela: 'arandelas',
-  abajur: 'abajures',
-  chao: 'luminárias de chão'
-};
-
+let products = [...STATIC_LIGHTING_PRODUCTS];
+let activeFilter = 'todos';
 let CircularGallery = null;
 let componentPromise = null;
 let liveRoot = null;
 let renderToken = 0;
 
-function visibleProducts(filter) {
-  return filter === 'todos' ? products : products.filter(product => product.category === filter);
+const preloadedRemoteLighting = window.LVProductStore?.products?.filter?.(product => product.catalog_type === 'lighting');
+if (Array.isArray(preloadedRemoteLighting) && preloadedRemoteLighting.length) {
+  products = preloadedRemoteLighting.map(normalizeRemoteProduct);
 }
 
-function updateStatus(filter, visible) {
-  if (!status) return;
-  status.textContent = visible.length
-    ? `Mostrando ${categoryNames[filter] || 'produtos'} · ${visible.length} ${visible.length === 1 ? 'item' : 'itens'}.`
-    : `Ainda não há fotos de ${categoryNames[filter] || 'produtos desta categoria'} no catálogo.`;
+function normalizeRemoteProduct(product) {
+  return {
+    id: product.slug || product.id,
+    image: product.image_url || '',
+    text: product.name,
+    category: product.category,
+    categoryLabel: product.category_label || product.category,
+    description: product.description || '',
+    detailNote: product.detail_note || '',
+    optionGroups: Array.isArray(product.properties) ? product.properties : []
+  };
+}
+
+function visibleProducts(filter) {
+  return filter === 'todos' ? products : products.filter(product => product.category === filter);
 }
 
 function openProduct(product) {
@@ -85,7 +93,7 @@ function openProduct(product) {
       ...product,
       name: product.text,
       source: 'luminaria',
-      optionGroups: []
+      optionGroups: product.optionGroups || []
     }
   }));
 }
@@ -111,9 +119,7 @@ function ensureRoot() {
   return liveRoot;
 }
 
-function renderEmpty(filter) {
-  updateStatus(filter, []);
-
+function renderEmpty() {
   if (React && ReactDOM && typeof ReactDOM.createRoot === 'function') {
     ensureRoot()?.render(emptyElement());
     return;
@@ -159,57 +165,57 @@ async function ensureComponent() {
   return componentPromise;
 }
 
+async function safeRender(filter = activeFilter) {
+  activeFilter = filter;
+  const token = ++renderToken;
+  const visible = visibleProducts(filter);
+
+  if (!visible.length) {
+    renderEmpty();
+    return;
+  }
+
+  if (!React || !ReactDOM) {
+    renderStaticFallback(visible);
+    return;
+  }
+
+  if (!liveRoot) {
+    mount.innerHTML = '<div class="circular-catalog-fallback">Carregando catálogo…</div>';
+  }
+
+  try {
+    const Gallery = await ensureComponent();
+    if (token !== renderToken) return;
+
+    const galleryProps = {
+      items: visible,
+      bend: 3,
+      textColor: '#0d2340',
+      borderRadius: 0.055,
+      font: '500 30px Jost',
+      scrollSpeed: 2,
+      scrollEase: 0.045,
+      onSelect: openProduct
+    };
+
+    if (typeof ReactDOM.createRoot === 'function') {
+      ensureRoot()?.render(React.createElement(Gallery, galleryProps));
+    } else {
+      ReactDOM.render(React.createElement(Gallery, galleryProps), mount);
+    }
+  } catch (error) {
+    console.error('Catálogo: falha ao iniciar CircularGallery. Usando versão alternativa.', error);
+    if (token === renderToken) renderStaticFallback(visible);
+  }
+}
+
 if (mount && filters) {
   mount.addEventListener('click', event => {
     const fallbackCard = event.target.closest('[data-catalog-product-id]');
     if (!fallbackCard) return;
     openProduct(products.find(product => product.id === fallbackCard.dataset.catalogProductId));
   });
-
-  const safeRender = async filter => {
-    const token = ++renderToken;
-    const visible = visibleProducts(filter);
-    updateStatus(filter, visible);
-
-    if (!visible.length) {
-      renderEmpty(filter);
-      return;
-    }
-
-    if (!React || !ReactDOM) {
-      renderStaticFallback(visible);
-      return;
-    }
-
-    if (!liveRoot) {
-      mount.innerHTML = '<div class="circular-catalog-fallback">Carregando catálogo…</div>';
-    }
-
-    try {
-      const Gallery = await ensureComponent();
-      if (token !== renderToken) return;
-
-      const galleryProps = {
-        items: visible,
-        bend: 3,
-        textColor: '#0d2340',
-        borderRadius: 0.055,
-        font: '500 28px Jost',
-        scrollSpeed: 2,
-        scrollEase: 0.045,
-        onSelect: openProduct
-      };
-
-      if (typeof ReactDOM.createRoot === 'function') {
-        ensureRoot()?.render(React.createElement(Gallery, galleryProps));
-      } else {
-        ReactDOM.render(React.createElement(Gallery, galleryProps), mount);
-      }
-    } catch (error) {
-      console.error('Catálogo: falha ao iniciar CircularGallery. Usando versão alternativa.', error);
-      if (token === renderToken) renderStaticFallback(visible);
-    }
-  };
 
   filters.addEventListener('click', event => {
     const button = event.target.closest('.filter');
@@ -222,6 +228,13 @@ if (mount && filters) {
     });
 
     safeRender(button.dataset.filter || 'todos');
+  });
+
+  window.addEventListener('lv:catalog-data', event => {
+    const remote = event.detail?.lighting;
+    if (!Array.isArray(remote) || !remote.length) return;
+    products = remote.map(normalizeRemoteProduct);
+    safeRender(activeFilter);
   });
 
   safeRender('todos');

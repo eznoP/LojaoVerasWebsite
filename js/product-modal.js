@@ -3,7 +3,7 @@
 
   const WHATSAPP_NUMBER = '5586995133553';
 
-  const varietyProducts = {
+  let varietyProducts = {
     'cabos-eletricos': {
       id: 'cabos-eletricos',
       name: 'Cabos elétricos',
@@ -83,6 +83,76 @@
       ]
     }
   };
+
+
+  function normalizeRemoteOtherProduct(product) {
+    return {
+      id: product.slug || product.id,
+      name: product.name || 'Produto',
+      categoryLabel: product.category_label || product.category || 'Produto',
+      category: product.category || 'outros',
+      description: product.description || 'Consulte detalhes e disponibilidade diretamente com a equipe do Lojão Veras.',
+      image: product.image_url || '',
+      source: 'variado',
+      detailNote: product.detail_note || 'Consulte variações e disponibilidade diretamente com a equipe.',
+      optionGroups: Array.isArray(product.properties) ? product.properties : []
+    };
+  }
+
+  function createVarietyCard(product) {
+    const article = document.createElement('article');
+    article.className = 'variety-product-card reveal visible';
+    article.dataset.productId = product.id;
+    article.dataset.varietyCategory = product.category || 'outros';
+    article.tabIndex = 0;
+    article.setAttribute('role', 'button');
+    article.setAttribute('aria-label', `Ver detalhes de ${product.name}`);
+
+    const visual = document.createElement('div');
+    visual.className = 'variety-product-visual';
+    if (product.image) {
+      const img = document.createElement('img');
+      img.src = product.image;
+      img.alt = product.name;
+      img.loading = 'lazy';
+      visual.classList.add('has-image');
+      visual.appendChild(img);
+    } else {
+      const span = document.createElement('span');
+      span.textContent = 'Foto em breve';
+      visual.appendChild(span);
+    }
+
+    const info = document.createElement('div');
+    info.className = 'variety-product-info';
+    const title = document.createElement('h3');
+    title.textContent = product.name;
+    const category = document.createElement('p');
+    category.textContent = product.categoryLabel;
+    const footer = document.createElement('div');
+    footer.className = 'variety-product-footer';
+    const strong = document.createElement('strong');
+    strong.textContent = 'Consultar disponibilidade';
+    const arrow = document.createElement('span');
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '↗';
+    footer.append(strong, arrow);
+    info.append(title, category, footer);
+    article.append(visual, info);
+    return article;
+  }
+
+  const preloadedRemoteOther = window.LVProductStore?.products?.filter?.(product => product.catalog_type === 'other');
+  if (Array.isArray(preloadedRemoteOther) && preloadedRemoteOther.length) {
+    const normalized = preloadedRemoteOther.map(normalizeRemoteOtherProduct);
+    varietyProducts = Object.fromEntries(normalized.map(product => [product.id, product]));
+    const preloadedGrid = document.getElementById('varietyGrid');
+    if (preloadedGrid) {
+      const fragment = document.createDocumentFragment();
+      normalized.forEach(product => fragment.appendChild(createVarietyCard(product)));
+      preloadedGrid.replaceChildren(fragment);
+    }
+  }
 
   const modal = document.getElementById('productModal');
   const dialog = modal?.querySelector('.product-modal-dialog');
@@ -289,6 +359,24 @@
   });
 
   window.addEventListener('lv:open-product', event => openModal(event.detail));
+
+
+  window.addEventListener('lv:catalog-data', event => {
+    const remote = event.detail?.other;
+    if (!Array.isArray(remote) || !remote.length) return;
+
+    const normalized = remote.map(normalizeRemoteOtherProduct);
+    varietyProducts = Object.fromEntries(normalized.map(product => [product.id, product]));
+
+    const grid = document.getElementById('varietyGrid');
+    if (grid) {
+      const fragment = document.createDocumentFragment();
+      normalized.forEach(product => fragment.appendChild(createVarietyCard(product)));
+      grid.replaceChildren(fragment);
+    }
+
+    applyVarietyFilters?.();
+  });
 
   document.addEventListener('click', event => {
     const card = event.target.closest('.variety-product-card[data-product-id]');

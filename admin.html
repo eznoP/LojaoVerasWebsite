@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>Administração · Lojão Veras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/admin.css" />
+</head>
+<body>
+  <main class="admin-page">
+    <header class="admin-topbar">
+      <a href="./index.html" class="admin-brand" aria-label="Voltar ao site">
+        <img src="./assets/lojao-veras-logo.png" alt="Lojão Veras" />
+      </a>
+      <div class="admin-topbar-actions">
+        <span class="admin-state" id="adminState">Área administrativa</span>
+        <button class="admin-ghost" id="logoutButton" type="button" hidden>Sair</button>
+      </div>
+    </header>
+
+    <section class="admin-config-warning" id="configWarning" hidden>
+      <strong>Administração ainda não conectada.</strong>
+      <p>A interface está pronta, mas o Supabase precisa ser configurado antes de ativar login, banco de dados e upload seguro de imagens.</p>
+      <a href="./ADMIN_SETUP.md">Ver instruções de configuração</a>
+    </section>
+
+    <section class="admin-auth" id="authView">
+      <div class="admin-auth-card">
+        <span class="admin-kicker">Acesso restrito</span>
+        <h1>Gerenciar catálogo</h1>
+        <p>Entre com uma conta autorizada para adicionar, editar ou remover produtos.</p>
+        <form id="loginForm" class="admin-form">
+          <label>E-mail<input id="loginEmail" type="email" autocomplete="username" required /></label>
+          <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" minlength="8" required /></label>
+          <button class="admin-primary" type="submit">Entrar</button>
+          <p class="admin-feedback" id="loginFeedback" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="admin-dashboard" id="dashboardView" hidden>
+      <div class="admin-dashboard-head">
+        <div>
+          <span class="admin-kicker">Catálogo</span>
+          <h1>Produtos da loja</h1>
+          <p>As alterações publicadas aqui aparecem no site sem precisar editar o HTML manualmente.</p>
+        </div>
+        <button class="admin-primary" id="newProductButton" type="button">+ Novo produto</button>
+      </div>
+
+      <div class="admin-metrics" aria-label="Resumo do catálogo">
+        <article><span>Total</span><strong id="metricTotal">0</strong></article>
+        <article><span>Luminárias</span><strong id="metricLighting">0</strong></article>
+        <article><span>Outros</span><strong id="metricOther">0</strong></article>
+        <article><span>Ocultos</span><strong id="metricHidden">0</strong></article>
+      </div>
+
+      <div class="admin-list-toolbar">
+        <label class="admin-search">Buscar<input id="adminSearch" type="search" placeholder="Nome ou categoria" autocomplete="off" /></label>
+        <select id="adminCatalogFilter" aria-label="Filtrar por catálogo">
+          <option value="todos">Todos</option>
+          <option value="lighting">Luminárias</option>
+          <option value="other">Outros produtos</option>
+        </select>
+      </div>
+
+      <div class="admin-product-list" id="adminProductList" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <div class="admin-editor" id="editorOverlay" hidden aria-hidden="true">
+    <div class="admin-editor-backdrop" data-editor-close></div>
+    <section class="admin-editor-panel" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <header class="admin-editor-head">
+        <div>
+          <span class="admin-kicker">Editor</span>
+          <h2 id="editorTitle">Novo produto</h2>
+        </div>
+        <button class="admin-close" type="button" data-editor-close aria-label="Fechar editor">×</button>
+      </header>
+
+      <form id="productForm" class="product-editor-form">
+        <input id="productId" type="hidden" />
+        <input id="existingImagePath" type="hidden" />
+        <input id="existingImageUrl" type="hidden" />
+
+        <div class="editor-grid editor-grid--2">
+          <label>Área de exibição
+            <select id="catalogType" required>
+              <option value="lighting">Catálogo de luminárias</option>
+              <option value="other">Outros produtos</option>
+            </select>
+          </label>
+          <label>Categoria
+            <select id="productCategory" required></select>
+          </label>
+        </div>
+
+        <label>Nome do produto<input id="productName" type="text" maxlength="120" required /></label>
+        <label>Descrição<textarea id="productDescription" rows="4" maxlength="800" placeholder="Descrição curta e objetiva do produto."></textarea></label>
+        <label>Observação de consulta<textarea id="productDetailNote" rows="3" maxlength="600" placeholder="Ex.: Consulte disponibilidade, acabamento e dimensões com a equipe."></textarea></label>
+
+        <div class="image-editor-block">
+          <div>
+            <span class="editor-label">Foto</span>
+            <p>JPG, PNG ou WebP. A imagem é redimensionada e convertida para WebP antes do upload.</p>
+          </div>
+          <label class="image-drop" for="productImage">
+            <input id="productImage" type="file" accept="image/jpeg,image/png,image/webp" />
+            <img id="imagePreview" alt="Prévia do produto" hidden />
+            <span id="imageDropLabel">Selecionar imagem</span>
+          </label>
+        </div>
+
+        <div class="properties-editor">
+          <div class="properties-head">
+            <div><span class="editor-label">Propriedades e opções</span><p>Tamanho, voltagem, cor, temperatura de cor ou qualquer característica específica.</p></div>
+            <button class="admin-ghost" id="addPropertyButton" type="button">+ Adicionar propriedade</button>
+          </div>
+          <div id="propertyList" class="property-list"></div>
+        </div>
+
+        <div class="editor-grid editor-grid--3">
+          <label>Ordem<input id="sortOrder" type="number" value="100" min="0" max="9999" /></label>
+          <label class="toggle-field"><span>Produto visível</span><input id="productActive" type="checkbox" checked /><i></i></label>
+        </div>
+
+        <div class="editor-actions">
+          <button class="admin-danger" id="deleteProductButton" type="button" hidden>Excluir</button>
+          <span class="admin-feedback" id="editorFeedback" aria-live="polite"></span>
+          <button class="admin-primary" id="saveProductButton" type="submit">Salvar produto</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/supabase-config.js"></script>
+  <script src="./js/admin.js"></script>
+</body>
+</html>

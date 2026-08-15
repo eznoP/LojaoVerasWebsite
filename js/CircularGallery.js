@@ -356,11 +356,11 @@ class Media {
 
     this.scale = this.screen.height / 1500;
     if (this.mobile) {
-      this.baseScaleY = this.viewport.height * 0.66;
-      this.baseScaleX = this.viewport.height * 0.50;
+      this.baseScaleY = this.viewport.height * 0.72;
+      this.baseScaleX = this.viewport.height * 0.55;
     } else {
-      this.baseScaleY = (this.viewport.height * (900 * this.scale)) / this.screen.height;
-      this.baseScaleX = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+      this.baseScaleY = (this.viewport.height * (1040 * this.scale)) / this.screen.height;
+      this.baseScaleX = (this.viewport.width * (810 * this.scale)) / this.screen.width;
     }
 
     this.plane.scale.y = this.baseScaleY;

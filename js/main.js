@@ -63,16 +63,5 @@
     waObserver.observe(addressBlock);
   }
 
-  const contactForm = $("#contactForm");
-  contactForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const nome = $("#nome").value.trim();
-    const mensagem = $("#mensagem").value.trim();
-    const text = `Olá, Lojão Veras! Meu nome é ${nome}.\n\n${mensagem}`;
-    window.open(`https://wa.me/5586995133553?text=${encodeURIComponent(text)}`, "_blank", "noopener");
-    $("#formFeedback").textContent = "Abrindo o WhatsApp…";
-    setTimeout(() => { $("#formFeedback").textContent = ""; }, 4000);
-  });
-
   $("#year").textContent = new Date().getFullYear();
 })();

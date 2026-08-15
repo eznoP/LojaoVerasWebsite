@@ -2994,3 +2994,752 @@ body.product-modal-open {
     animation: none;
   }
 }
+
+/* ========================================================================
+   LOJÃO VERAS — v2.0 · hero cinematográfico + refinamentos de UI
+   ======================================================================== */
+.hero-v2 {
+  min-height: 820px;
+  isolation: isolate;
+  background: #f5f2ea;
+}
+
+.hero-v2 .hero-content {
+  z-index: 5;
+  max-width: 720px;
+  padding: 34px 36px 38px;
+  border: 1px solid rgba(255,255,255,.44);
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255,253,248,.86), rgba(255,253,248,.66));
+  box-shadow: 0 34px 80px rgba(13,35,64,.11);
+  backdrop-filter: blur(18px) saturate(1.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.hero-v2 .hero-title {
+  text-wrap: balance;
+}
+
+.hero-v2 .hero-sub {
+  max-width: 620px;
+}
+
+.hero-photo-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-photo-track {
+  position: absolute;
+  top: 50%;
+  left: -44%;
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 2.3vw, 38px);
+  width: max-content;
+  transform: translate3d(0, -50%, 0);
+  animation: heroPhotoFlow 72s linear infinite;
+  will-change: transform;
+}
+
+.hero-photo {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(240px, 23vw, 390px);
+  aspect-ratio: .72;
+  overflow: hidden;
+  border-radius: 30px;
+  box-shadow: 0 36px 72px rgba(13,35,64,.20);
+  transform-origin: center;
+}
+
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-photo--near {
+  opacity: .56;
+  filter: blur(.2px) saturate(.86) contrast(.96);
+  transform: translateY(-8px) scale(1.025);
+}
+
+.hero-photo--mid {
+  opacity: .42;
+  filter: blur(1.5px) saturate(.72);
+  transform: translateY(18px) scale(.94);
+}
+
+.hero-photo--far {
+  opacity: .28;
+  filter: blur(4px) saturate(.62);
+  transform: translateY(-24px) scale(.86);
+}
+
+.hero-photo-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgba(248,246,240,.98) 0%, rgba(248,246,240,.92) 31%, rgba(248,246,240,.58) 53%, rgba(248,246,240,.18) 78%, rgba(248,246,240,.32) 100%),
+    linear-gradient(180deg, rgba(248,246,240,.36), transparent 22%, transparent 78%, rgba(248,246,240,.7));
+}
+
+.hero-photo-depth {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background:
+    radial-gradient(circle at 78% 46%, rgba(255,205,109,.16), transparent 29%),
+    radial-gradient(circle at 54% 52%, transparent 35%, rgba(13,35,64,.07) 100%);
+  box-shadow: inset 0 -90px 120px rgba(13,35,64,.035);
+}
+
+@keyframes heroPhotoFlow {
+  from { transform: translate3d(-32%, -50%, 0); }
+  to { transform: translate3d(0%, -50%, 0); }
+}
+
+/* Catálogo circular mais amplo e com menos espaço morto. */
+.circular-catalog-wrap {
+  margin-top: 34px;
+}
+
+.circular-catalog-stage {
+  height: clamp(590px, 56vw, 760px);
+  margin-top: 0;
+  border-radius: 28px;
+  box-shadow: 0 32px 72px rgba(13,35,64,.10);
+}
+
+.circular-catalog-stage::before {
+  inset: 4% 7%;
+}
+
+/* Subtexto editorial para o catálogo complementar. */
+.section-intro--editorial {
+  max-width: 900px;
+  color: var(--ink-dim);
+  font-size: clamp(.96rem, 1.25vw, 1.08rem);
+  line-height: 1.9;
+  letter-spacing: .008em;
+}
+
+.section-intro--editorial span {
+  color: var(--brass);
+  font-weight: 500;
+}
+
+.section-intro--editorial i {
+  font-family: var(--font-serif);
+  font-size: 1.08em;
+  font-style: italic;
+  color: color-mix(in srgb, var(--ink) 76%, var(--ink-dim));
+}
+
+.variety-product-visual.has-image {
+  padding: 0;
+}
+
+.variety-product-visual.has-image::before {
+  display: none;
+}
+
+.variety-product-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  transition: transform .55s var(--ease-fluid), filter .55s var(--ease-fluid);
+}
+
+.variety-product-card:hover .variety-product-visual img {
+  transform: scale(1.035);
+  filter: saturate(1.04) contrast(1.02);
+}
+
+/* Contato simplificado: endereço + CTA, sem formulário. */
+.contato-v2 {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 30%, rgba(240,198,106,.10), transparent 34%),
+    linear-gradient(135deg, #eef0f1, #f6f3ec 72%);
+}
+
+.contato-v2::after {
+  content: "";
+  position: absolute;
+  right: -160px;
+  bottom: -240px;
+  width: 520px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(13,35,64,.07);
+  border-radius: 50%;
+  box-shadow: 0 0 0 56px rgba(13,35,64,.018), 0 0 0 112px rgba(13,35,64,.012);
+  pointer-events: none;
+}
+
+.contact-section-head {
+  padding-bottom: 28px;
+}
+
+.contact-focus {
+  position: relative;
+  z-index: 2;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(26px, 4vw, 48px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(18px, 3vw, 40px);
+  border: 1px solid rgba(13,35,64,.10);
+  border-radius: 26px;
+  background: rgba(255,253,248,.77);
+  box-shadow: 0 28px 70px rgba(13,35,64,.10);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+
+
+.contact-address-mark svg {
+  width: 31px;
+  height: 31px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+}
+
+.contact-address {
+  display: grid;
+  gap: 5px;
+  font-style: normal;
+}
+
+.contact-address strong {
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: clamp(1.55rem, 3vw, 2.45rem);
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+.contact-address span {
+  color: var(--ink-dim);
+  font-size: .88rem;
+  letter-spacing: .03em;
+}
+
+.contact-wa {
+  min-width: 230px;
+  justify-content: center;
+}
+
+/* Localização com respiro antes do rodapé. */
+.mapa-v2 {
+  padding-bottom: clamp(110px, 11vw, 170px);
+}
+
+.mapa-v2 .map-wrap {
+  width: min(1120px, calc(100% - 80px));
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 24px;
+}
+
+.mapa-v2 .real-map {
+  height: clamp(440px, 48vw, 590px);
+}
+
+/* Microinterações gerais. */
+.section {
+  position: relative;
+}
+
+.btn,
+.filter,
+.variety-tab,
+.variety-product-card,
+.map-wrap,
+.contact-focus {
+  transform: translateZ(0);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.section-head .section-title {
+  text-wrap: balance;
+}
+
+.reveal {
+  transition-timing-function: var(--ease-fluid);
+}
+
+.admin-quick-link {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1500;
+  padding: 11px 16px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: #0d2340;
+  color: #f5f2ea;
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  box-shadow: 0 14px 34px rgba(13,35,64,.22);
+}
+
+.admin-quick-link[hidden] { display: none !important; }
+
+@media (max-width: 980px) {
+  .hero-v2 {
+    min-height: 760px;
+  }
+
+  .hero-v2 .hero-content {
+    max-width: 650px;
+  }
+
+  .hero-photo-track {
+    left: -82%;
+  }
+
+  .circular-catalog-stage {
+    height: 620px;
+  }
+
+  .contact-focus {
+    grid-template-columns: auto 1fr;
+  }
+
+  .contact-wa {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero-v2 {
+    min-height: 720px;
+    padding-inline: 18px;
+  }
+
+  .hero-v2 .hero-content {
+    width: 100%;
+    padding: 28px 24px 30px;
+    border-radius: 22px;
+  }
+
+  .hero-photo-track {
+    left: -185%;
+    gap: 18px;
+    animation-duration: 58s;
+  }
+
+  .hero-photo {
+    width: min(68vw, 300px);
+    border-radius: 24px;
+  }
+
+  .hero-photo-veil {
+    background:
+      linear-gradient(180deg, rgba(248,246,240,.86), rgba(248,246,240,.62) 45%, rgba(248,246,240,.84)),
+      linear-gradient(90deg, rgba(248,246,240,.84), rgba(248,246,240,.32));
+  }
+
+  .circular-catalog-stage {
+    height: min(132vw, 580px);
+    min-height: 500px;
+  }
+
+  .contact-focus {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .contact-address-mark {
+    margin-inline: auto;
+  }
+
+  .contact-address {
+    justify-items: center;
+  }
+
+  .mapa-v2 .map-wrap {
+    width: calc(100% - 36px);
+  }
+}
+
+@media (max-width: 430px) {
+  .hero-v2 .hero-content {
+    padding: 25px 19px 27px;
+  }
+
+  .hero-v2 .hero-actions {
+    gap: 10px;
+  }
+
+  .hero-v2 .hero-actions .btn {
+    flex: 1 1 150px;
+  }
+
+  .circular-catalog-stage {
+    height: 510px;
+    min-height: 510px;
+  }
+
+  .contact-focus {
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-photo-track {
+    animation: none;
+    transform: translate3d(-18%, -50%, 0);
+  }
+}
+
+/* ========================================================================
+   LOJÃO VERAS — v2.1 · hero full-bleed + contato refinado
+   ======================================================================== */
+.hero-v2 {
+  min-height: 820px;
+  background: #07182d;
+}
+
+/* O texto fica diretamente sobre as fotografias — sem cartão/fundo branco. */
+.hero-v2 .hero-content {
+  z-index: 5;
+  max-width: 790px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.hero-v2 .hero-eyebrow {
+  color: #f0c66a;
+  text-shadow: 0 2px 18px rgba(0,0,0,.34);
+}
+
+.hero-v2 .hero-title {
+  max-width: 790px;
+  color: #fffdf8;
+  text-shadow: 0 4px 34px rgba(0,0,0,.48);
+}
+
+.hero-v2 .hero-sub {
+  max-width: 650px;
+  color: rgba(255,253,248,.88);
+  text-shadow: 0 2px 20px rgba(0,0,0,.46);
+}
+
+.hero-v2 .hero-actions .btn-solid {
+  box-shadow: 0 12px 34px rgba(0,0,0,.22);
+}
+
+.hero-v2 .hero-actions .btn-ghost {
+  color: #fffdf8;
+  border-color: rgba(255,255,255,.58);
+  background: rgba(7,24,45,.08);
+  box-shadow: 0 10px 28px rgba(0,0,0,.12);
+}
+
+.hero-v2 .hero-actions .btn-ghost::before {
+  background: rgba(255,253,248,.96);
+}
+
+.hero-v2 .hero-actions .btn-ghost:hover {
+  color: #07182d;
+  border-color: rgba(255,255,255,.92);
+}
+
+/* Carrossel de fundo: todos os painéis têm exatamente as mesmas dimensões. */
+.hero-photo-scene {
+  inset: 0;
+  background: #07182d;
+}
+
+.hero-photo-track {
+  top: 0;
+  left: 0;
+  height: 100%;
+  gap: 0;
+  align-items: stretch;
+  transform: translate3d(-50%, 0, 0);
+  animation: heroPhotoFlowV21 92s linear infinite;
+}
+
+.hero-photo,
+.hero-photo--near,
+.hero-photo--mid,
+.hero-photo--far {
+  flex: 0 0 auto;
+  width: clamp(330px, 31vw, 520px);
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  opacity: 1;
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.hero-photo img,
+.hero-photo--near img,
+.hero-photo--mid img,
+.hero-photo--far img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.035);
+  filter: blur(2.4px) saturate(.88) contrast(.95);
+}
+
+/* Camadas sobre toda a fotografia, não atrás do texto. */
+.hero-photo-veil {
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgba(5,18,35,.72) 0%, rgba(5,18,35,.55) 38%, rgba(5,18,35,.34) 72%, rgba(5,18,35,.42) 100%),
+    linear-gradient(180deg, rgba(5,18,35,.30) 0%, rgba(5,18,35,.04) 44%, rgba(5,18,35,.48) 100%);
+}
+
+.hero-photo-depth {
+  z-index: 3;
+  background:
+    radial-gradient(circle at 72% 38%, rgba(240,198,106,.11), transparent 31%),
+    radial-gradient(circle at 20% 55%, rgba(3,12,24,.10), transparent 38%);
+  box-shadow: inset 0 -90px 120px rgba(3,12,24,.18);
+}
+
+.hero-v2 .hero-bg {
+  z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: .35;
+}
+
+@keyframes heroPhotoFlowV21 {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+/* Contato: endereço em cima e CTA maior logo abaixo. */
+.contact-focus {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "mark address"
+    "mark action";
+  align-items: center;
+  column-gap: clamp(22px, 3.4vw, 44px);
+  row-gap: 18px;
+}
+
+.contact-address-mark {
+  grid-area: mark;
+  align-self: center;
+}
+
+.contact-address {
+  grid-area: address;
+}
+
+.contact-wa {
+  grid-area: action;
+  justify-self: start;
+  min-width: min(100%, 360px);
+  min-height: 62px;
+  margin-top: 4px !important;
+  padding: 18px 30px !important;
+  justify-content: center;
+  font-size: .94rem;
+  letter-spacing: .055em;
+}
+
+.contact-wa .wa-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.contact-wa .wa-label {
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 980px) {
+  .hero-photo,
+  .hero-photo--near,
+  .hero-photo--mid,
+  .hero-photo--far {
+    width: clamp(310px, 43vw, 460px);
+  }
+}
+
+@media (max-width: 720px) {
+  .hero-v2 {
+    min-height: 720px;
+    padding-inline: 22px;
+  }
+
+  .hero-v2 .hero-content {
+    width: min(100%, 620px);
+    padding: 0;
+  }
+
+  .hero-photo-track {
+    left: 0;
+    gap: 0;
+    animation-duration: 78s;
+  }
+
+  .hero-photo,
+  .hero-photo--near,
+  .hero-photo--mid,
+  .hero-photo--far {
+    width: 72vw;
+    border-radius: 0;
+  }
+
+  .hero-photo-veil {
+    background:
+      linear-gradient(90deg, rgba(5,18,35,.66), rgba(5,18,35,.42)),
+      linear-gradient(180deg, rgba(5,18,35,.38) 0%, rgba(5,18,35,.08) 36%, rgba(5,18,35,.54) 100%);
+  }
+
+  .contact-focus {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "mark"
+      "address"
+      "action";
+    justify-items: center;
+    row-gap: 20px;
+  }
+
+  .contact-wa {
+    width: min(100%, 440px);
+    min-width: 0;
+    justify-self: center;
+    min-height: 64px;
+  }
+}
+
+@media (max-width: 430px) {
+  .hero-v2 .hero-content {
+    padding: 0;
+  }
+
+  .hero-photo,
+  .hero-photo--near,
+  .hero-photo--mid,
+  .hero-photo--far {
+    width: 86vw;
+  }
+
+  .contact-wa {
+    min-height: 62px;
+    padding: 17px 22px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-photo-track {
+    animation: none;
+    transform: translate3d(-35%, 0, 0);
+  }
+}
+
+/* ========================================================================
+   LOJÃO VERAS — v2.2 · alinhamento visual da área de contato
+   O conteúdo principal fica centralizado independentemente do ícone lateral.
+   ======================================================================== */
+@media (min-width: 721px) {
+  .contato-v2 .contact-focus {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 250px;
+    padding: clamp(34px, 4.5vw, 56px) clamp(92px, 10vw, 150px);
+    text-align: center;
+  }
+
+  .contato-v2 .contact-address-mark {
+    position: absolute;
+    left: clamp(28px, 5vw, 58px);
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+  }
+
+  .contato-v2 .contact-address {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100%, 680px);
+    text-align: center;
+  }
+
+  .contato-v2 .contact-address strong,
+  .contato-v2 .contact-address span {
+    width: 100%;
+    text-align: center;
+  }
+
+  .contato-v2 .contact-wa {
+    align-self: center;
+    width: min(100%, 420px);
+    min-width: 320px;
+    margin: 18px auto 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .contato-v2 .contact-focus {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 32px 22px;
+    text-align: center;
+  }
+
+  .contato-v2 .contact-address-mark {
+    position: static;
+    transform: none;
+  }
+
+  .contato-v2 .contact-address {
+    align-items: center;
+    text-align: center;
+  }
+
+  .contato-v2 .contact-address strong,
+  .contato-v2 .contact-address span {
+    text-align: center;
+  }
+
+  .contato-v2 .contact-wa {
+    width: min(100%, 440px);
+    min-width: 0;
+    margin: 8px auto 0 !important;
+  }
+}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-site-version="1.7">
+<html lang="pt-BR" data-site-version="2.0">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./css/style.css" />
-  <link rel="stylesheet" href="./css/AccordionGallery.css" />
   <link rel="stylesheet" href="./css/CircularGallery.css" />
 </head>
 <body>
@@ -31,7 +30,7 @@
         <li><a href="#contato">Contato</a></li>
         <li><a href="#localizacao">Localização</a></li>
       </ul>
-      <a href="#contato" class="nav-cta">Visitar a loja</a>
+      <a href="#localizacao" class="nav-cta">Visitar a loja</a>
       <button class="nav-toggle" id="navToggle" aria-label="Abrir menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -44,11 +43,27 @@
       <li><a href="#contato">Contato</a></li>
       <li><a href="#localizacao">Localização</a></li>
     </ul>
-    <a href="#contato" class="mobile-cta">Visitar a loja</a>
+    <a href="#localizacao" class="mobile-cta">Visitar a loja</a>
   </div>
 
   <main>
-    <section class="hero" id="topo">
+    <section class="hero hero-v2" id="topo">
+      <div class="hero-photo-scene" aria-hidden="true">
+        <div class="hero-photo-track">
+          <figure class="hero-photo hero-photo--far"><img src="./assets/produtos/pendente-escultural-madeira.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--near"><img src="./assets/produtos/pendente-organico-madeira.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--mid"><img src="./assets/produtos/arandela-lanterna-preta.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--near"><img src="./assets/produtos/pendente-aramado-preto.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--far"><img src="./assets/produtos/pendente-cupula-madeira.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--far"><img src="./assets/produtos/pendente-escultural-madeira.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--near"><img src="./assets/produtos/pendente-organico-madeira.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--mid"><img src="./assets/produtos/arandela-lanterna-preta.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--near"><img src="./assets/produtos/pendente-aramado-preto.webp" alt="" /></figure>
+          <figure class="hero-photo hero-photo--far"><img src="./assets/produtos/pendente-cupula-madeira.webp" alt="" /></figure>
+        </div>
+        <div class="hero-photo-veil"></div>
+        <div class="hero-photo-depth"></div>
+      </div>
       <div class="hero-bg">
         <div class="glow glow-1"></div>
         <div class="glow glow-2"></div>
@@ -57,17 +72,11 @@
       <div class="hero-content">
         <p class="hero-eyebrow reveal">Luminárias &amp; Material Elétrico · Parnaíba — PI</p>
         <h1 class="hero-title reveal">Encontre a iluminação certa para cada ambiente.</h1>
-        <p class="hero-sub reveal">Veja alguns dos produtos disponíveis e fale com nossa equipe para consultar modelos, cores e disponibilidade. A compra é realizada presencialmente em nossa loja.</p>
+        <p class="hero-sub reveal">Descubra modelos para diferentes estilos e projetos. Consulte cores, dimensões e disponibilidade diretamente com a equipe do Lojão Veras.</p>
         <div class="hero-actions reveal">
           <a href="#catalogo" class="btn btn-solid">Ver catálogo</a>
           <a href="#localizacao" class="btn btn-ghost">Nossa localização</a>
         </div>
-      </div>
-      <div class="hero-gallery-shell" id="heroGallery" aria-label="Galeria de produtos em destaque">
-        <a class="hero-gallery-fallback" href="#catalogo" aria-label="Ver pendente escultural no catálogo">
-          <img src="./assets/produtos/pendente-escultural-madeira.webp" alt="Pendente escultural de madeira disponível no Lojão Veras" />
-          <span>Pendente escultural</span>
-        </a>
       </div>
     </section>
 
@@ -93,9 +102,6 @@
       </div>
 
       <div class="circular-catalog-wrap reveal">
-        <div class="circular-catalog-toolbar">
-          <p id="catalogStatus" class="catalog-status" aria-live="polite">Mostrando todos os produtos fotografados.</p>
-        </div>
         <div class="circular-catalog-stage">
           <div id="circularCatalog" class="circular-catalog-host">
             <div class="circular-catalog-fallback">Carregando catálogo…</div>
@@ -111,8 +117,8 @@
 
     <section class="variedades section" id="variedades">
       <div class="section-head">
-        <h2 class="section-title reveal">Produtos variados</h2>
-        <p class="section-intro reveal">Materiais e utilidades elétricas organizados para consulta rápida. As fotos serão adicionadas conforme o catálogo real da loja for atualizado.</p>
+        <h2 class="section-title reveal">Outros produtos</h2>
+        <p class="section-intro section-intro--editorial reveal">Materiais elétricos, lâmpadas, componentes para reparo e acessórios de luminárias.</p>
       </div>
 
       <div class="variety-catalog-shell reveal">
@@ -198,39 +204,27 @@
       </div>
     </section>
 
-    <section class="contato section" id="contato">
-      <div class="section-head">
+    <section class="contato section contato-v2" id="contato">
+      <div class="section-head contact-section-head">
         <h2 class="section-title reveal">Contato</h2>
-        <p class="section-intro reveal">Para confirmar modelos, cores e disponibilidade antes da visita, fale diretamente com a equipe.</p>
       </div>
-      <div class="contato-grid">
-        <div class="contato-info">
-          <div class="store-contact-card reveal" id="addressBlock">
-            <div class="store-address">
-              <h3>Nossa localização</h3>
-              <p>Av. São Sebastião, 1057<br />B. Nossa Sra. de Fátima - Parnaíba - PI</p>
-            </div>
-            <a class="wa-btn wa-inline" id="waBtn" href="https://wa.me/5586995133553?text=Ol%C3%A1%2C%20Loj%C3%A3o%20Veras!%20Gostaria%20de%20consultar%20um%20produto." target="_blank" rel="noopener" aria-label="Falar com o Lojão Veras pelo WhatsApp">
-              <svg class="wa-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.7c-7.3 0-13.3 6-13.3 13.3 0 2.4.6 4.6 1.7 6.6L2.6 29.3l6.9-1.7c1.9 1 4 1.6 6.5 1.6 7.3 0 13.3-6 13.3-13.3S23.3 2.7 16 2.7zm0 24.3c-2 0-3.9-.5-5.5-1.5l-.4-.2-4.1 1 1-4-.3-.4a11 11 0 1 1 9.3 5.1zm5.9-8.2c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.9-.8 2.1-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.4z"/></svg>
-              <span class="wa-label">Falar no WhatsApp · 86 99513-3553</span><span class="wa-ring"></span>
-            </a>
-          </div>
+      <div class="contact-focus reveal" id="addressBlock">
+        <div class="contact-address-mark" aria-hidden="true">
         </div>
-        <div class="contact-form-wrap reveal">
-          <form class="contact-form" id="contactForm">
-            <div class="form-row"><label for="nome">Nome</label><input type="text" id="nome" name="nome" placeholder="Seu nome" required /></div>
-            <div class="form-row"><label for="mensagem">Produto ou dúvida</label><textarea id="mensagem" name="mensagem" rows="6" placeholder="Ex.: Quero consultar um pendente preto para sala de jantar." required></textarea></div>
-            <button type="submit" class="btn btn-solid btn-block">Enviar pelo WhatsApp</button>
-            <p class="form-feedback" id="formFeedback"></p>
-          </form>
-        </div>
+        <address class="contact-address">
+          <strong>Av. São Sebastião, 1057</strong>
+          <span>B. Nossa Sra. de Fátima · Parnaíba — PI</span>
+        </address>
+        <a class="wa-btn wa-inline contact-wa" id="waBtn" href="https://wa.me/5586995133553?text=Ol%C3%A1%2C%20Loj%C3%A3o%20Veras!%20Gostaria%20de%20consultar%20um%20produto." target="_blank" rel="noopener" aria-label="Falar com o Lojão Veras pelo WhatsApp">
+          <svg class="wa-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.7c-7.3 0-13.3 6-13.3 13.3 0 2.4.6 4.6 1.7 6.6L2.6 29.3l6.9-1.7c1.9 1 4 1.6 6.5 1.6 7.3 0 13.3-6 13.3-13.3S23.3 2.7 16 2.7zm0 24.3c-2 0-3.9-.5-5.5-1.5l-.4-.2-4.1 1 1-4-.3-.4a11 11 0 1 1 9.3 5.1zm5.9-8.2c-.3-.2-1.9-1-2.2-1.1-.3-.1-.5-.2-.7.2-.2.3-.8 1.1-1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.6-1.9-1.8-2.3-.2-.3 0-.5.1-.7l.5-.6c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.9-.8 2.1-1.5.3-.7.3-1.4.2-1.5-.1-.1-.3-.2-.6-.4z"/></svg>
+          <span class="wa-label">Falar no WhatsApp</span><span class="wa-ring"></span>
+        </a>
       </div>
     </section>
 
-    <section class="mapa section" id="localizacao">
+    <section class="mapa section mapa-v2" id="localizacao">
       <div class="section-head">
         <h2 class="section-title reveal">Localização</h2>
-        <p class="section-intro reveal">Av. São Sebastião, 1057 — Nossa Senhora de Fátima, Parnaíba — PI.</p>
       </div>
       <div class="map-wrap reveal">
         <iframe class="real-map" title="Mapa do Lojão Veras" src="https://www.google.com/maps?q=Av.%20S%C3%A3o%20Sebasti%C3%A3o%2C%201057%2C%20Parna%C3%ADba%20-%20PI&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -268,6 +262,8 @@
     </section>
   </div>
 
+  <a class="admin-quick-link" id="adminQuickLink" href="./admin.html" hidden aria-label="Abrir administração do catálogo">Administrar catálogo</a>
+
   <footer class="footer">
     <div class="footer-inner">
       <a href="#topo" class="brand footer-brand brand-with-logo" aria-label="Lojão Veras - início"><img class="brand-logo footer-logo" src="./assets/lojao-veras-logo.png" alt="Lojão Veras — Luminárias & Material Elétrico" /></a>
@@ -278,11 +274,12 @@
 
   <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="./js/AccordionGallery.js"></script>
-  <script src="./js/hero-gallery.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/supabase-config.js"></script>
+  <script src="./js/product-store.js"></script>
   <script src="./js/product-modal.js"></script>
   <script type="module" src="./js/catalog-gallery.js"></script>
+  <script src="./js/admin-session.js"></script>
   <script src="./js/main.js"></script>
 </body>
 </html>
