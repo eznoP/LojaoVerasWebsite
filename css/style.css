@@ -3206,7 +3206,16 @@ body.product-modal-open {
   -webkit-backdrop-filter: blur(16px);
 }
 
-
+.contact-address-mark {
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  background: #0d2340;
+  color: #f4f1e9;
+  box-shadow: 0 16px 34px rgba(13,35,64,.19);
+}
 
 .contact-address-mark svg {
   width: 31px;
