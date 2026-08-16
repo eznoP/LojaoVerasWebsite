@@ -6,6 +6,6 @@
  * Preencha estes valores apenas depois de aplicar supabase/schema.sql.
  */
 window.LV_SUPABASE_CONFIG = Object.freeze({
-  url: '',
-  publishableKey: ''
+  url: 'https://isfzohewdugcoyldkihd.supabase.co',
+  publishableKey: 'sb_publishable_Uc2hHMgjKgn0RD9nP7iOBg_VoriH5N5'
 });
