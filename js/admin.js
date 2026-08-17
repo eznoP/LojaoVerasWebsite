@@ -25,12 +25,6 @@
   const deleteButton = $('#deleteProductButton');
   const searchInput = $('#adminSearch');
   const catalogFilter = $('#adminCatalogFilter');
-  const selectAllProducts = $('#selectAllProducts');
-  const bulkActions = $('#bulkActions');
-  const selectionCount = $('#selectionCount');
-  const clearSelectionButton = $('#clearSelectionButton');
-  const bulkDeleteButton = $('#bulkDeleteButton');
-  const bulkFeedback = $('#bulkFeedback');
 
   const categories = {
     lighting: [
@@ -48,8 +42,6 @@
   let currentProduct = null;
   let pendingImageBlob = null;
   let closeTimer = null;
-  const selectedProductIds = new Set();
-  let visibleProducts = [];
 
   function feedback(element, message = '', type = '') {
     if (!element) return;
@@ -129,71 +121,29 @@
     return box;
   }
 
-  function updateBulkUI() {
-    const selectedCount = selectedProductIds.size;
-    const visibleIds = visibleProducts.map(product => product.id);
-    const visibleSelectedCount = visibleIds.filter(id => selectedProductIds.has(id)).length;
-
-    bulkActions.hidden = selectedCount === 0;
-    selectionCount.textContent = `${selectedCount} ${selectedCount === 1 ? 'selecionado' : 'selecionados'}`;
-
-    selectAllProducts.checked = visibleIds.length > 0 && visibleSelectedCount === visibleIds.length;
-    selectAllProducts.indeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length;
-    selectAllProducts.disabled = visibleIds.length === 0;
-  }
-
-  function setProductSelected(productId, selected) {
-    if (selected) selectedProductIds.add(productId);
-    else selectedProductIds.delete(productId);
-    updateBulkUI();
-  }
-
-  function clearSelection() {
-    selectedProductIds.clear();
-    feedback(bulkFeedback, '');
-    renderProducts();
-  }
-
   function renderProducts() {
     const query = (searchInput.value || '').trim().toLocaleLowerCase('pt-BR');
     const filter = catalogFilter.value;
-    visibleProducts = products.filter(product => {
+    const visible = products.filter(product => {
       const catalogMatch = filter === 'todos' || product.catalog_type === filter;
       const searchMatch = !query || `${product.name} ${product.category_label || product.category}`.toLocaleLowerCase('pt-BR').includes(query);
       return catalogMatch && searchMatch;
     });
 
     productList.replaceChildren();
-    if (!visibleProducts.length) {
+    if (!visible.length) {
       const empty = document.createElement('p');
       empty.style.padding = '28px 4px';
       empty.style.color = '#68717d';
       empty.textContent = 'Nenhum produto encontrado.';
       productList.appendChild(empty);
-      updateBulkUI();
       return;
     }
 
     const fragment = document.createDocumentFragment();
-    visibleProducts.forEach(product => {
+    visible.forEach(product => {
       const row = document.createElement('article');
-      row.className = `admin-product-row${selectedProductIds.has(product.id) ? ' is-selected' : ''}`;
-
-      const selection = document.createElement('label');
-      selection.className = 'admin-product-select';
-      selection.setAttribute('aria-label', `Selecionar ${product.name}`);
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = selectedProductIds.has(product.id);
-      checkbox.addEventListener('change', () => {
-        setProductSelected(product.id, checkbox.checked);
-        row.classList.toggle('is-selected', checkbox.checked);
-      });
-      const checkmark = document.createElement('span');
-      checkmark.setAttribute('aria-hidden', 'true');
-      selection.append(checkbox, checkmark);
-      row.appendChild(selection);
-
+      row.className = 'admin-product-row';
       row.appendChild(productThumb(product));
 
       const copy = document.createElement('div');
@@ -210,7 +160,6 @@
       fragment.appendChild(row);
     });
     productList.appendChild(fragment);
-    updateBulkUI();
   }
 
   async function loadProducts() {
@@ -220,8 +169,6 @@
       return;
     }
     products = data || [];
-    const existingIds = new Set(products.map(product => product.id));
-    Array.from(selectedProductIds).forEach(id => { if (!existingIds.has(id)) selectedProductIds.delete(id); });
     updateMetrics();
     renderProducts();
   }
@@ -294,51 +241,6 @@
   $('#addPropertyButton').addEventListener('click', () => addPropertyRow());
   searchInput.addEventListener('input', renderProducts);
   catalogFilter.addEventListener('change', renderProducts);
-  selectAllProducts.addEventListener('change', () => {
-    visibleProducts.forEach(product => setProductSelected(product.id, selectAllProducts.checked));
-    renderProducts();
-  });
-  clearSelectionButton.addEventListener('click', clearSelection);
-
-  bulkDeleteButton.addEventListener('click', async () => {
-    const selectedProducts = products.filter(product => selectedProductIds.has(product.id));
-    if (!selectedProducts.length) return;
-
-    const count = selectedProducts.length;
-    const previewNames = selectedProducts.slice(0, 4).map(product => `“${product.name}”`).join(', ');
-    const remaining = Math.max(0, count - 4);
-    const detail = remaining ? `${previewNames} e mais ${remaining}` : previewNames;
-    const confirmed = confirm(`Excluir ${count} ${count === 1 ? 'produto selecionado' : 'produtos selecionados'}?\n\n${detail}\n\nEssa ação não pode ser desfeita.`);
-    if (!confirmed) return;
-
-    bulkDeleteButton.disabled = true;
-    clearSelectionButton.disabled = true;
-    selectAllProducts.disabled = true;
-    feedback(bulkFeedback, `Excluindo ${count} ${count === 1 ? 'produto' : 'produtos'}…`);
-
-    try {
-      const ids = selectedProducts.map(product => product.id);
-      const imagePaths = selectedProducts.map(product => product.image_path).filter(Boolean);
-      const { error } = await client.from('products').delete().in('id', ids);
-      if (error) throw error;
-
-      if (imagePaths.length) {
-        const { error: storageError } = await client.storage.from('product-images').remove(imagePaths);
-        if (storageError) console.warn('Produtos excluídos, mas algumas imagens não puderam ser removidas:', storageError);
-      }
-
-      selectedProductIds.clear();
-      feedback(bulkFeedback, `${count} ${count === 1 ? 'produto excluído' : 'produtos excluídos'} com sucesso.`, 'success');
-      await loadProducts();
-    } catch (error) {
-      console.error(error);
-      feedback(bulkFeedback, error.message || 'Não foi possível excluir os produtos selecionados.', 'error');
-    } finally {
-      bulkDeleteButton.disabled = false;
-      clearSelectionButton.disabled = false;
-      updateBulkUI();
-    }
-  });
 
   function collectProperties() {
     return Array.from(propertyList.querySelectorAll('.property-row')).map(row => {
