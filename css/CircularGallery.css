@@ -68,8 +68,8 @@
   object-fit: cover;
   display: block;
   border-radius: 18px;
-  background: #eeeae1;
-  box-shadow: 0 18px 40px rgba(13, 35, 64, 0.1);
+  background: transparent;
+  box-shadow: none;
 }
 
 .circular-gallery-fallback-card span {
@@ -88,7 +88,7 @@
   }
 }
 
-/* v1.6 · UX mobile */
+/* UX mobile */
 .circular-gallery {
   touch-action: pan-y pinch-zoom;
   overscroll-behavior-x: contain;
@@ -106,12 +106,12 @@
   align-items: center;
   gap: 10px;
   padding: 7px;
-  border: 1px solid rgba(13, 35, 64, 0.12);
+  border: 1px solid rgba(200, 162, 90, 0.22);
   border-radius: 999px;
-  background: rgba(252, 249, 242, 0.88);
-  box-shadow: 0 12px 34px rgba(13, 35, 64, 0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(14, 12, 10, 0.48);
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .circular-gallery-nav {
@@ -120,26 +120,28 @@
   display: grid;
   place-items: center;
   flex: 0 0 44px;
-  border: 1px solid rgba(13, 35, 64, 0.18);
+  border: 1px solid rgba(200, 162, 90, 0.34);
   border-radius: 50%;
-  background: #fffdf8;
-  color: #0d2340;
+  background: rgba(14, 12, 10, 0.56);
+  color: var(--brass-bright, #e6c98a);
   font: 500 1.1rem/1 sans-serif;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: transform 180ms ease, background 180ms ease;
 }
 
 .circular-gallery-nav:active {
   transform: scale(0.96);
+  background: rgba(200, 162, 90, 0.12);
 }
 
 .circular-gallery-nav:focus-visible {
-  outline: 2px solid #0d2340;
+  outline: 2px solid var(--brass, #c8a25a);
   outline-offset: 2px;
 }
 
 .circular-gallery-swipe-hint {
-  color: #5f6873;
+  color: var(--ink-dim, #a89d8d);
   font: 500 0.68rem/1 'Jost', sans-serif;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -167,7 +169,7 @@
   }
 }
 
-/* v1.7 · cards também abrem detalhes do produto */
+/* cards também abrem detalhes do produto */
 .circular-gallery-fallback-card {
   border: 0;
   background: transparent;
@@ -177,7 +179,35 @@
 }
 
 .circular-gallery-fallback-card:focus-visible {
-  outline: 2px solid var(--brass, #0d2340);
+  outline: 2px solid var(--brass, #c8a25a);
   outline-offset: 5px;
   border-radius: 18px;
+}
+
+/* Catálogo fundido ao fundo do site */
+.circular-catalog-stage {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.circular-catalog-stage::before,
+.circular-catalog-stage::after {
+  content: none !important;
+  display: none !important;
+}
+
+.circular-catalog-stage,
+.circular-catalog-host,
+.circular-gallery-shell,
+.circular-gallery,
+.circular-gallery canvas,
+.circular-gallery-fallback-list {
+  background: transparent !important;
+}
+
+/* A área administrativa continua acessível pela URL, mas sem atalho no site público. */
+.admin-quick-link {
+  display: none !important;
 }

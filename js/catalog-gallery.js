@@ -194,8 +194,8 @@ async function safeRender(filter = activeFilter) {
       textColor: '#0d2340',
       borderRadius: 0.055,
       font: '500 30px Jost',
-      scrollSpeed: 2,
-      scrollEase: 0.045,
+      scrollSpeed: 1.45,
+      scrollEase: 0.065,
       onSelect: openProduct
     };
 
