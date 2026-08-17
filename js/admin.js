@@ -25,6 +25,8 @@
   const deleteButton = $('#deleteProductButton');
   const searchInput = $('#adminSearch');
   const catalogFilter = $('#adminCatalogFilter');
+  const visibleProductCount = $('#visibleProductCount');
+  const mobileNewProductButton = $('#mobileNewProductButton');
 
   const categories = {
     lighting: [
@@ -42,6 +44,7 @@
   let currentProduct = null;
   let pendingImageBlob = null;
   let closeTimer = null;
+  let lastFocusedElement = null;
 
   function feedback(element, message = '', type = '') {
     if (!element) return;
@@ -73,12 +76,14 @@
       dashboardView.hidden = false;
       logoutButton.hidden = false;
       adminState.textContent = user.email || 'Administrador';
+      mobileNewProductButton.hidden = false;
       await loadProducts();
       return;
     }
     authView.hidden = false;
     dashboardView.hidden = true;
     logoutButton.hidden = true;
+    mobileNewProductButton.hidden = true;
     adminState.textContent = 'Área administrativa';
   }
 
@@ -131,11 +136,11 @@
     });
 
     productList.replaceChildren();
+    if (visibleProductCount) visibleProductCount.textContent = `${visible.length} ${visible.length === 1 ? 'produto' : 'produtos'}`;
     if (!visible.length) {
       const empty = document.createElement('p');
-      empty.style.padding = '28px 4px';
-      empty.style.color = '#68717d';
-      empty.textContent = 'Nenhum produto encontrado.';
+      empty.className = 'admin-empty-state';
+      empty.innerHTML = '<strong>Nenhum produto encontrado</strong><span>Tente ajustar a busca ou o filtro selecionado.</span>'; 
       productList.appendChild(empty);
       return;
     }
@@ -208,6 +213,7 @@
 
   function openEditor(product = null) {
     currentProduct = product;
+    lastFocusedElement = document.activeElement;
     $('#editorTitle').textContent = product ? 'Editar produto' : 'Novo produto';
     $('#productId').value = product?.id || '';
     $('#existingImagePath').value = product?.image_path || '';
@@ -217,7 +223,6 @@
     $('#productName').value = product?.name || '';
     $('#productDescription').value = product?.description || '';
     $('#productDetailNote').value = product?.detail_note || '';
-    $('#sortOrder').value = product?.sort_order ?? 100;
     $('#productActive').checked = product?.active ?? true;
     resetImagePreview(product?.image_url || '');
     propertyList.replaceChildren();
@@ -226,15 +231,25 @@
     deleteButton.hidden = !product;
     feedback(editorFeedback, '');
     editor.hidden = false; editor.setAttribute('aria-hidden','false');
-    requestAnimationFrame(() => requestAnimationFrame(() => editor.classList.add('is-open')));
+    document.body.classList.add('admin-editor-open');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      editor.classList.add('is-open');
+      setTimeout(() => $('#productName')?.focus({ preventScroll: true }), 180);
+    }));
   }
 
   function closeEditor() {
     editor.classList.remove('is-open'); editor.setAttribute('aria-hidden','true');
-    clearTimeout(closeTimer); closeTimer = setTimeout(() => { editor.hidden = true; currentProduct = null; }, 320);
+    document.body.classList.remove('admin-editor-open');
+    clearTimeout(closeTimer); closeTimer = setTimeout(() => {
+      editor.hidden = true; currentProduct = null;
+      if (lastFocusedElement && document.contains(lastFocusedElement)) lastFocusedElement.focus({ preventScroll: true });
+      lastFocusedElement = null;
+    }, 320);
   }
 
   $('#newProductButton').addEventListener('click', () => openEditor());
+  mobileNewProductButton?.addEventListener('click', () => openEditor());
   editor.addEventListener('click', event => { if (event.target.closest('[data-editor-close]')) closeEditor(); });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !editor.hidden) closeEditor(); });
   catalogType.addEventListener('change', () => fillCategories(catalogType.value));
@@ -287,6 +302,12 @@
     return { imagePath, imageUrl: data.publicUrl };
   }
 
+  function getAutomaticSortOrder() {
+    if (currentProduct?.sort_order != null) return currentProduct.sort_order;
+    const highest = products.reduce((max, product) => Math.max(max, Number(product.sort_order) || 0), 0);
+    return highest > 0 ? highest + 10 : 100;
+  }
+
   productForm.addEventListener('submit', async event => {
     event.preventDefault();
     const saveButton = $('#saveProductButton'); saveButton.disabled = true; feedback(editorFeedback, 'Salvando produto…');
@@ -299,7 +320,7 @@
         catalog_type: catalogType.value, category: categorySelect.value, category_label: categoryLabel,
         description: $('#productDescription').value.trim(), detail_note: $('#productDetailNote').value.trim(),
         image_path: imagePath, image_url: imageUrl, properties: collectProperties(),
-        active: $('#productActive').checked, sort_order: Number($('#sortOrder').value) || 100,
+        active: $('#productActive').checked, sort_order: getAutomaticSortOrder(),
         updated_at: new Date().toISOString()
       };
       let result;
