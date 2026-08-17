@@ -26,5 +26,7 @@
   }
 
   refreshAdminVisibility();
-  client.auth.onAuthStateChange(() => refreshAdminVisibility());
+  client.auth.onAuthStateChange(() => {
+    setTimeout(() => refreshAdminVisibility(), 0);
+  });
 })();

@@ -52,6 +52,16 @@
     element.className = `admin-feedback${type ? ` ${type}` : ''}`;
   }
 
+  function withTimeout(promise, ms = 12000, message = 'A operação demorou mais que o esperado. Tente novamente.') {
+    let timer;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      })
+    ]).finally(() => clearTimeout(timer));
+  }
+
   if (!configured) {
     configWarning.hidden = false;
     loginForm.querySelectorAll('input,button').forEach(el => el.disabled = true);
@@ -65,21 +75,16 @@
 
   async function isAdmin(user) {
     if (!user) return false;
-    const { data, error } = await client.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
-    return !error && Boolean(data);
+    const { data, error } = await withTimeout(
+      client.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle(),
+      12000,
+      'Não foi possível validar a permissão administrativa. Verifique sua conexão e tente novamente.'
+    );
+    if (error) throw error;
+    return Boolean(data);
   }
 
-  async function refreshSession() {
-    const { data: { user } } = await client.auth.getUser();
-    if (user && await isAdmin(user)) {
-      authView.hidden = true;
-      dashboardView.hidden = false;
-      logoutButton.hidden = false;
-      adminState.textContent = user.email || 'Administrador';
-      mobileNewProductButton.hidden = false;
-      await loadProducts();
-      return;
-    }
+  function showAuthView() {
     authView.hidden = false;
     dashboardView.hidden = true;
     logoutButton.hidden = true;
@@ -87,19 +92,71 @@
     adminState.textContent = 'Área administrativa';
   }
 
+  async function showDashboard(user) {
+    authView.hidden = true;
+    dashboardView.hidden = false;
+    logoutButton.hidden = false;
+    adminState.textContent = user.email || 'Administrador';
+    mobileNewProductButton.hidden = false;
+    await loadProducts();
+  }
+
+  async function refreshSession() {
+    try {
+      const { data: { user }, error } = await withTimeout(
+        client.auth.getUser(),
+        12000,
+        'Não foi possível recuperar sua sessão. Recarregue a página e tente novamente.'
+      );
+      if (error) throw error;
+      if (user && await isAdmin(user)) {
+        await showDashboard(user);
+        return;
+      }
+      showAuthView();
+    } catch (error) {
+      console.error('Lojão Veras Admin: falha ao verificar sessão.', error);
+      showAuthView();
+      feedback(loginFeedback, error.message || 'Não foi possível verificar sua sessão.', 'error');
+    }
+  }
+
   loginForm.addEventListener('submit', async event => {
     event.preventDefault();
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
     feedback(loginFeedback, 'Verificando acesso…');
     const email = $('#loginEmail').value.trim();
     const password = $('#loginPassword').value;
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
-    if (error) return feedback(loginFeedback, 'Não foi possível entrar. Verifique seus dados.', 'error');
-    if (!await isAdmin(data.user)) {
-      await client.auth.signOut();
-      return feedback(loginFeedback, 'Esta conta não possui permissão administrativa.', 'error');
+
+    try {
+      const { data, error } = await withTimeout(
+        client.auth.signInWithPassword({ email, password }),
+        12000,
+        'O login demorou mais que o esperado. Tente novamente.'
+      );
+      if (error) {
+        feedback(loginFeedback, 'Não foi possível entrar. Verifique seu e-mail e senha.', 'error');
+        return;
+      }
+
+      const authorized = await isAdmin(data.user);
+      if (!authorized) {
+        await client.auth.signOut();
+        showAuthView();
+        feedback(loginFeedback, 'Login válido, mas esta conta ainda não foi autorizada como administradora.', 'error');
+        return;
+      }
+
+      feedback(loginFeedback, 'Acesso autorizado.', 'success');
+      await showDashboard(data.user);
+      feedback(loginFeedback, '');
+    } catch (error) {
+      console.error('Lojão Veras Admin: falha no login.', error);
+      feedback(loginFeedback, error.message || 'Não foi possível concluir o acesso.', 'error');
+    } finally {
+      submitButton.disabled = false;
     }
-    feedback(loginFeedback, '');
-    await refreshSession();
   });
 
   logoutButton.addEventListener('click', async () => {
@@ -346,5 +403,11 @@
   });
 
   refreshSession();
-  client.auth.onAuthStateChange(() => refreshSession());
+
+  // O Supabase executa callbacks de onAuthStateChange durante o processamento
+  // interno da sessão. Fazer novas chamadas ao cliente dentro desse callback pode
+  // bloquear o fluxo de autenticação. Adiamos a verificação para o próximo tick.
+  client.auth.onAuthStateChange(() => {
+    setTimeout(() => refreshSession(), 0);
+  });
 })();
