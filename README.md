@@ -1,4 +1,4 @@
-<div align="center">
+v<div align="center">
 
 <img src="docs/logo.svg" alt="Lojão Veras" width="180">
 
@@ -16,7 +16,7 @@ a presença online do **Lojão Veras**.
 
 <br>
 
-[🌐 Acessar site](https://lojaoveraswebsite.enzoriosverasost.workers.dev/)
+[🌐 Acessar site](https://lojao-veras.vercel.app/)
 
 </div>
 
